@@ -2,6 +2,7 @@
 	import { addTask } from "$lib/stores/app.svelte.js";
 	import { todayISO, dayLabel } from "$lib/utils/dates.js";
 	import { extractRecurrence, nextOccurrence } from "$lib/core/recurrence.js";
+	import { extractDateTarget } from "$lib/core/date-parser.js";
 
 	interface Props {
 		open: boolean;
@@ -17,14 +18,25 @@
 	// Live preview of what will happen
 	let preview = $derived(() => {
 		if (!value.trim()) return null;
-		const { title, rule, ruleText } = extractRecurrence(value.trim());
-		if (!rule) return null;
-		const next = nextOccurrence(rule, todayISO());
-		if (!next) return null;
+		const { title: afterRecurrence, rule, ruleText } = extractRecurrence(value.trim());
+		const { title, parsedDate, dateText } = extractDateTarget(afterRecurrence);
+
+		// Nothing interesting to preview
+		if (!rule && !parsedDate) return null;
+
+		let targetDate: string;
+		if (rule) {
+			const next = nextOccurrence(rule, parsedDate || todayISO());
+			targetDate = next ? dayLabel(next) : dayLabel(parsedDate || todayISO());
+		} else {
+			targetDate = dayLabel(parsedDate!);
+		}
+
 		return {
 			title,
-			ruleText,
-			targetDate: dayLabel(next),
+			ruleText: ruleText || null,
+			dateText: dateText || null,
+			targetDate,
 		};
 	});
 
@@ -79,17 +91,17 @@
 					bind:this={inputEl}
 					bind:value
 					onkeydown={handleKeydown}
-					placeholder="e.g. Buy milk every monday"
+					placeholder="e.g. Buy milk tomorrow, meeting next friday"
 					type="text"
 					autocomplete="off"
 				/>
 				{#if previewInfo}
 					<div class="capture-preview">
-						"{previewInfo.title}" &rarr; {previewInfo.targetDate}, repeats {previewInfo.ruleText}
+						"{previewInfo.title}" &rarr; {previewInfo.targetDate}{#if previewInfo.ruleText}, repeats {previewInfo.ruleText}{/if}
 					</div>
 				{:else}
 					<div class="capture-hint">
-						Enter to add &middot; Supports "every monday", "daily", etc. &middot; Esc to dismiss
+						Enter to add &middot; "tomorrow", "next friday", "every monday", etc. &middot; Esc to dismiss
 					</div>
 				{/if}
 			{/if}

@@ -27,6 +27,8 @@
 	let paletteOpen = $state(false);
 	let captureOpen = $state(false);
 	let sidebarExpanded = $state(false);
+	let updateAvailable = $state<{ version: string } | null>(null);
+	let updateInstalling = $state(false);
 
 	let view = $derived(getCurrentView());
 	let focusMode = $derived(isFocusMode());
@@ -37,7 +39,35 @@
 		const { store, type } = await createStore();
 		await initStore(store, type);
 		ready = true;
+
+		// Silent update check on startup
+		if (typeof window !== 'undefined' && '__TAURI__' in window) {
+			try {
+				const { check } = await import('@tauri-apps/plugin-updater');
+				const update = await check();
+				if (update?.available) {
+					updateAvailable = { version: update.version };
+				}
+			} catch {
+				// Silently ignore — not critical
+			}
+		}
 	});
+
+	async function installUpdate() {
+		updateInstalling = true;
+		try {
+			const { check } = await import('@tauri-apps/plugin-updater');
+			const { relaunch } = await import('@tauri-apps/plugin-process');
+			const update = await check();
+			if (update?.available) {
+				await update.downloadAndInstall();
+				await relaunch();
+			}
+		} catch {
+			updateInstalling = false;
+		}
+	}
 
 	function handleToggleFocusMode() {
 		toggleFocusMode();
@@ -177,6 +207,18 @@
 		</nav>
 
 		<main class="main-content">
+			{#if updateAvailable}
+				<div class="update-banner">
+					<span>Update v{updateAvailable.version} available</span>
+					{#if updateInstalling}
+						<span class="update-installing">Installing...</span>
+					{:else}
+						<button class="update-install-btn" onclick={installUpdate}>Install & Restart</button>
+						<button class="update-dismiss-btn" onclick={() => (updateAvailable = null)} aria-label="Dismiss">&times;</button>
+					{/if}
+				</div>
+			{/if}
+
 			<div class="main-toolbar">
 				<button
 					class="focus-mode-btn"
@@ -499,5 +541,51 @@
 		max-width: 1200px;
 		margin: 0 auto;
 		padding: 0 24px 48px;
+	}
+
+	/* ── Update banner ── */
+	.update-banner {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 10px 24px;
+		background: rgba(45, 106, 79, 0.1);
+		border-bottom: 1px solid rgba(45, 106, 79, 0.2);
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--heading-green);
+	}
+
+	.update-install-btn {
+		padding: 4px 14px;
+		border-radius: 6px;
+		font-size: 13px;
+		font-weight: 600;
+		background: var(--heading-green);
+		color: #fff;
+		transition: all var(--transition-fast);
+	}
+
+	.update-install-btn:hover {
+		background: var(--heading-green-light);
+		box-shadow: 0 2px 8px rgba(45, 106, 79, 0.3);
+	}
+
+	.update-dismiss-btn {
+		font-size: 16px;
+		color: var(--text-muted);
+		padding: 2px 6px;
+		border-radius: 4px;
+		transition: all var(--transition-fast);
+	}
+
+	.update-dismiss-btn:hover {
+		background: rgba(0, 0, 0, 0.05);
+		color: var(--text);
+	}
+
+	.update-installing {
+		font-style: italic;
+		color: var(--text-secondary);
 	}
 </style>

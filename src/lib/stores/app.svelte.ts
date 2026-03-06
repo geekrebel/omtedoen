@@ -14,6 +14,7 @@ import {
 	sortOrderBetween
 } from '$lib/core/task-engine.js';
 import { extractRecurrence, nextOccurrence } from '$lib/core/recurrence.js';
+import { extractDateTarget } from '$lib/core/date-parser.js';
 
 // Reactive state
 let store: TodoStore | null = $state(null);
@@ -30,19 +31,28 @@ export function getTodayTasks(): Task[] {
 	const today = todayISO();
 	return allTasks
 		.filter((t) => t.dateTarget === today && !t.deletedAt && !t.parked)
-		.sort((a, b) => a.sortOrder - b.sortOrder);
+		.sort((a, b) => {
+			if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+			return a.sortOrder - b.sortOrder;
+		});
 }
 
 export function getTasksForDate(date: string): Task[] {
 	return allTasks
 		.filter((t) => t.dateTarget === date && !t.deletedAt && !t.parked)
-		.sort((a, b) => a.sortOrder - b.sortOrder);
+		.sort((a, b) => {
+			if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+			return a.sortOrder - b.sortOrder;
+		});
 }
 
 export function getTasksForList(listId: string): Task[] {
 	return allTasks
 		.filter((t) => t.listId === listId && !t.deletedAt)
-		.sort((a, b) => a.sortOrder - b.sortOrder);
+		.sort((a, b) => {
+			if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+			return a.sortOrder - b.sortOrder;
+		});
 }
 
 export function getParkedTasks(): Task[] {
@@ -144,10 +154,27 @@ export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
 
 // Actions
 
-export async function addTask(title: string, dateTarget: string | null, listId: string | null = null): Promise<Task> {
+export async function addTask(
+	title: string,
+	dateTarget: string | null,
+	listId: string | null = null,
+	options?: { skipDateParsing?: boolean }
+): Promise<Task> {
 	if (!store) throw new Error('Store not initialized');
 
-	const { title: cleanTitle, rule, ruleText } = extractRecurrence(title);
+	// Stage 1: Extract recurrence ("every monday", "daily", etc.)
+	const { title: afterRecurrence, rule, ruleText } = extractRecurrence(title);
+
+	// Stage 2: Extract one-off date ("tomorrow", "next friday", "March 15", etc.)
+	let cleanTitle = afterRecurrence;
+	let effectiveDate = dateTarget;
+	if (!options?.skipDateParsing) {
+		const { title: afterDate, parsedDate } = extractDateTarget(afterRecurrence);
+		cleanTitle = afterDate;
+		if (parsedDate) {
+			effectiveDate = parsedDate;
+		}
+	}
 
 	// Parse priority prefix
 	let priority: Task['priority'] = 'should';
@@ -165,7 +192,6 @@ export async function addTask(title: string, dateTarget: string | null, listId: 
 
 	// For recurring tasks with a specific day, place the task on the next
 	// occurrence instead of today (e.g. "buy milk every monday" → next Monday)
-	let effectiveDate = dateTarget;
 	if (rule && effectiveDate) {
 		const next = nextOccurrence(rule, effectiveDate);
 		if (next) {

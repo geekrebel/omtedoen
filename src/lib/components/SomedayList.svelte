@@ -18,7 +18,7 @@
 	let collapsed = $state(false);
 
 	function handleAdd(title: string) {
-		addTask(title, null, list.id);
+		addTask(title, null, list.id, { skipDateParsing: true });
 	}
 
 	function handleDelete() {

@@ -23,6 +23,11 @@ Thumbs.db
 *.swp
 *.swo
 
+# Signing keys
+*.key
+*.pem
+privatekey*
+
 # Misc
 *.log
 check_output.txt

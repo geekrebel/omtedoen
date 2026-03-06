@@ -1,16 +1,23 @@
 # OmTeDoen — Backlog
 
-## Bugs
+## Done
 
-- [ ] Quick Capture: "buy milk tomorrow" is added verbatim to Today instead of parsing the date
-- [ ] Completed tasks should sink to the bottom of the task list
+- [x] Quick Capture: parse natural language dates ("buy milk tomorrow", "meeting next friday") via chrono-node
+- [x] Completed tasks sink to the bottom of each day column / list
+- [x] Delete task by hovering and pressing Delete/Backspace key
 
 ## UX Improvements
 
-- [ ] Delete task by hovering and pressing the Delete key
-- [ ] Move completed tasks to the bottom of each day column
-- [ ] Update colour palette
+- [ ] Update colour palette (refine current cream/green theme, extract hardcoded colours to CSS variables)
 
 ## Design
 
-- [ ] Add new app logo
+- [ ] Add new app logo & icon
+
+## System
+
+- [ ] Allow automatic updates (via GitHub Releases + tauri-plugin-updater)
+
+## Licence
+
+- [ ] Commit LICENSE file and add contribution details

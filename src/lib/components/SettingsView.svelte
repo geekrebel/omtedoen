@@ -13,6 +13,9 @@
 	let freshStartConfirm = $state(false);
 	let freshStartResult = $state<number | null>(null);
 	let exportMsg = $state<string | null>(null);
+	let updateStatus = $state<'idle' | 'checking' | 'downloading' | 'available' | 'up-to-date' | 'error'>('idle');
+	let updateVersion = $state<string | null>(null);
+	let updateError = $state<string | null>(null);
 
 	async function handleFreshStart() {
 		if (!freshStartConfirm) {
@@ -27,6 +30,44 @@
 
 	function cancelFreshStart() {
 		freshStartConfirm = false;
+	}
+
+	async function handleCheckUpdate() {
+		if (updateStatus === 'checking' || updateStatus === 'downloading') return;
+		updateStatus = 'checking';
+		updateError = null;
+		try {
+			const { check } = await import('@tauri-apps/plugin-updater');
+			const update = await check();
+			if (update?.available) {
+				updateVersion = update.version;
+				updateStatus = 'available';
+			} else {
+				updateStatus = 'up-to-date';
+				setTimeout(() => (updateStatus = 'idle'), 3000);
+			}
+		} catch (e: any) {
+			updateError = e?.message || 'Update check failed';
+			updateStatus = 'error';
+			setTimeout(() => (updateStatus = 'idle'), 5000);
+		}
+	}
+
+	async function handleInstallUpdate() {
+		updateStatus = 'downloading';
+		try {
+			const { check } = await import('@tauri-apps/plugin-updater');
+			const { relaunch } = await import('@tauri-apps/plugin-process');
+			const update = await check();
+			if (update?.available) {
+				await update.downloadAndInstall();
+				await relaunch();
+			}
+		} catch (e: any) {
+			updateError = e?.message || 'Install failed';
+			updateStatus = 'error';
+			setTimeout(() => (updateStatus = 'idle'), 5000);
+		}
 	}
 
 	function handleExport() {
@@ -141,6 +182,38 @@
 			A simple, ADHD-friendly todo app.<br />
 			Built with Svelte + Tauri.
 		</p>
+
+		<div class="setting-row" style="margin-top: 12px;">
+			<div class="setting-info">
+				<span class="setting-label">Updates</span>
+				<span class="setting-desc">
+					{#if updateStatus === 'checking'}
+						Checking for updates...
+					{:else if updateStatus === 'downloading'}
+						Downloading update...
+					{:else if updateStatus === 'available'}
+						Version {updateVersion} is available.
+					{:else if updateStatus === 'up-to-date'}
+						You're up to date.
+					{:else if updateStatus === 'error'}
+						{updateError}
+					{:else}
+						Check for new versions of OmTeDoen.
+					{/if}
+				</span>
+			</div>
+			{#if updateStatus === 'available'}
+				<button class="action-btn" onclick={handleInstallUpdate}>Install & Restart</button>
+			{:else if updateStatus === 'up-to-date'}
+				<span class="fresh-result">Up to date</span>
+			{:else if updateStatus === 'error'}
+				<button class="action-btn" onclick={handleCheckUpdate}>Retry</button>
+			{:else if updateStatus === 'checking' || updateStatus === 'downloading'}
+				<span class="update-spinner"></span>
+			{:else}
+				<button class="action-btn" onclick={handleCheckUpdate}>Check for Updates</button>
+			{/if}
+		</div>
 	</section>
 </div>
 
@@ -345,5 +418,19 @@
 	.about-text strong {
 		color: var(--text);
 		font-size: 16px;
+	}
+
+	.update-spinner {
+		width: 20px;
+		height: 20px;
+		border: 2px solid var(--border);
+		border-top-color: var(--heading-green);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+		flex-shrink: 0;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 </style>

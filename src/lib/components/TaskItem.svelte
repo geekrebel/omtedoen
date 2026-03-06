@@ -99,6 +99,9 @@
 		} else if (e.key === "3") {
 			e.preventDefault();
 			setPriority("want");
+		} else if (e.key === "Delete" || e.key === "Backspace") {
+			e.preventDefault();
+			handleDelete();
 		}
 	}
 
