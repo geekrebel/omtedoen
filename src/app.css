@@ -41,6 +41,10 @@
 	--parking: #a855f7;
 	--parking-soft: rgba(168, 85, 247, 0.15);
 
+	/* Headings */
+	--heading-green: #2d6a4f;
+	--heading-green-light: #52b788;
+
 	/* Typography */
 	--font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 	--font-mono: 'JetBrains Mono', monospace;
@@ -248,20 +252,8 @@ a:hover {
 	animation: celebrate 0.5s var(--transition-bounce) forwards;
 }
 
-/* Low energy mode overrides - calming, monochromatic, high contrast */
-.low-energy {
-	--bg: #111111;
-	--bg-surface: #1a1a1a;
-	--bg-sidebar: #111111;
-	--accent: #ffffff;
-	--accent-glow: rgba(255, 255, 255, 0.1);
-	--priority-must: #ffffff;
-	--priority-should: #aaaaaa;
-	--priority-want: #666666;
-	background-image: none;
-}
-
-.low-energy .week-nav,
-.low-energy .sidebar-someday {
+/* Focus mode — hides non-essential UI, keeps normal colours */
+.focus-mode .month-nav,
+.focus-mode .sidebar-someday {
 	display: none;
 }

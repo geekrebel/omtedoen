@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { addTask } from "$lib/stores/app.svelte.js";
-	import { todayISO } from "$lib/utils/dates.js";
+	import { todayISO, dayLabel } from "$lib/utils/dates.js";
+	import { extractRecurrence, nextOccurrence } from "$lib/core/recurrence.js";
 
 	interface Props {
 		open: boolean;
@@ -11,12 +12,35 @@
 
 	let value = $state("");
 	let inputEl: HTMLInputElement | undefined = $state();
+	let feedback = $state<string | null>(null);
 
-	function handleSubmit() {
+	// Live preview of what will happen
+	let preview = $derived(() => {
+		if (!value.trim()) return null;
+		const { title, rule, ruleText } = extractRecurrence(value.trim());
+		if (!rule) return null;
+		const next = nextOccurrence(rule, todayISO());
+		if (!next) return null;
+		return {
+			title,
+			ruleText,
+			targetDate: dayLabel(next),
+		};
+	});
+
+	let previewInfo = $derived(preview());
+
+	async function handleSubmit() {
 		if (value.trim()) {
-			addTask(value.trim(), todayISO());
+			const task = await addTask(value.trim(), todayISO());
+			const dateStr = task.dateTarget ? dayLabel(task.dateTarget) : "today";
+			const recur = task.recurrenceRule ? ` (${task.recurrenceRule})` : "";
+			feedback = `Added "${task.title}" to ${dateStr}${recur}`;
 			value = "";
-			onclose();
+			setTimeout(() => {
+				feedback = null;
+				onclose();
+			}, 1500);
 		}
 	}
 
@@ -24,6 +48,7 @@
 		if (e.key === "Enter") handleSubmit();
 		if (e.key === "Escape") {
 			value = "";
+			feedback = null;
 			onclose();
 		}
 	}
@@ -31,6 +56,7 @@
 	$effect(() => {
 		if (open) {
 			value = "";
+			feedback = null;
 			requestAnimationFrame(() => inputEl?.focus());
 		}
 	});
@@ -45,17 +71,28 @@
 			aria-label="Quick capture"
 		>
 			<div class="capture-label">Quick Capture</div>
-			<input
-				bind:this={inputEl}
-				bind:value
-				onkeydown={handleKeydown}
-				placeholder="What's on your mind?"
-				type="text"
-				autocomplete="off"
-			/>
-			<div class="capture-hint">
-				Enter to add to today &middot; Esc to dismiss
-			</div>
+
+			{#if feedback}
+				<div class="capture-feedback">{feedback}</div>
+			{:else}
+				<input
+					bind:this={inputEl}
+					bind:value
+					onkeydown={handleKeydown}
+					placeholder="e.g. Buy milk every monday"
+					type="text"
+					autocomplete="off"
+				/>
+				{#if previewInfo}
+					<div class="capture-preview">
+						"{previewInfo.title}" &rarr; {previewInfo.targetDate}, repeats {previewInfo.ruleText}
+					</div>
+				{:else}
+					<div class="capture-hint">
+						Enter to add &middot; Supports "every monday", "daily", etc. &middot; Esc to dismiss
+					</div>
+				{/if}
+			{/if}
 		</div>
 	</div>
 {/if}
@@ -64,7 +101,7 @@
 	.overlay {
 		position: fixed;
 		inset: 0;
-		background: rgba(0, 0, 0, 0.4);
+		background: rgba(0, 0, 0, 0.3);
 		backdrop-filter: blur(8px);
 		-webkit-backdrop-filter: blur(8px);
 		display: flex;
@@ -84,26 +121,26 @@
 	}
 
 	.capture-box {
-		background: rgba(25, 28, 41, 0.95);
+		background: var(--bg);
 		border: 1px solid var(--border);
 		border-radius: 20px;
 		box-shadow:
-			0 24px 48px -12px rgba(0, 0, 0, 0.5),
-			0 0 0 1px rgba(94, 114, 255, 0.2);
+			0 24px 48px -12px rgba(0, 0, 0, 0.15),
+			0 0 0 1px rgba(45, 106, 79, 0.2);
 		width: 100%;
 		max-width: 480px;
 		padding: 24px 32px;
-		animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
 	@keyframes slideUp {
 		from {
 			opacity: 0;
-			transform: translateY(20px) scale(0.95);
+			transform: translateY(12px);
 		}
 		to {
 			opacity: 1;
-			transform: translateY(0) scale(1);
+			transform: translateY(0);
 		}
 	}
 
@@ -112,17 +149,8 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		color: var(--accent);
+		color: var(--heading-green);
 		margin-bottom: 16px;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.capture-label::before {
-		content: "⚡";
-		font-size: 16px;
-		filter: drop-shadow(0 0 8px var(--accent-glow));
 	}
 
 	input {
@@ -137,8 +165,8 @@
 	}
 
 	input:focus {
-		border-bottom-color: var(--accent);
-		box-shadow: 0 1px 0 0 var(--accent);
+		border-bottom-color: var(--heading-green);
+		box-shadow: 0 1px 0 0 var(--heading-green);
 	}
 
 	input::placeholder {
@@ -147,10 +175,29 @@
 	}
 
 	.capture-hint {
-		margin-top: 16px;
+		margin-top: 12px;
 		font-size: 13px;
 		color: var(--text-muted);
-		display: flex;
-		justify-content: space-between;
+	}
+
+	.capture-preview {
+		margin-top: 12px;
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--heading-green);
+		background: rgba(45, 106, 79, 0.08);
+		padding: 8px 12px;
+		border-radius: 8px;
+		border: 1px solid rgba(45, 106, 79, 0.15);
+	}
+
+	.capture-feedback {
+		font-size: 16px;
+		font-weight: 600;
+		color: var(--success);
+		background: var(--success-soft);
+		padding: 16px;
+		border-radius: 12px;
+		text-align: center;
 	}
 </style>

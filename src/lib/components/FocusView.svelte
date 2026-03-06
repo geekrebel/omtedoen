@@ -1,9 +1,9 @@
 <script lang="ts">
 	import DayColumn from "./DayColumn.svelte";
-	import { getTodayTasks, isLowEnergyMode } from "$lib/stores/app.svelte.js";
+	import { getTodayTasks, isFocusMode } from "$lib/stores/app.svelte.js";
 	import { todayISO, dayLabel, addDays } from "$lib/utils/dates.js";
 
-	let lowEnergy = $derived(isLowEnergyMode());
+	let focusMode = $derived(isFocusMode());
 
 	// Calculate the 3 days
 	let todayStr = $derived(todayISO());
@@ -46,11 +46,11 @@
 				{#if mustCount > 0}
 					<span class="summary-chip must">{mustCount} must</span>
 				{/if}
-				{#if shouldCount > 0 && !lowEnergy}
+				{#if shouldCount > 0 && !focusMode}
 					<span class="summary-chip should">{shouldCount} should</span
 					>
 				{/if}
-				{#if wantCount > 0 && !lowEnergy}
+				{#if wantCount > 0 && !focusMode}
 					<span class="summary-chip want">{wantCount} want</span>
 				{/if}
 				{#if completedCount > 0}
@@ -60,9 +60,9 @@
 		{/if}
 	</div>
 
-	{#if lowEnergy && shouldCount + wantCount > 0}
-		<p class="low-energy-note">
-			{shouldCount + wantCount} more tasks hidden today in low-energy mode
+	{#if focusMode && shouldCount + wantCount > 0}
+		<p class="focus-mode-note">
+			{shouldCount + wantCount} more tasks hidden in focus mode
 		</p>
 	{/if}
 
@@ -77,9 +77,8 @@
 	.focus-view {
 		display: flex;
 		flex-direction: column;
-		height: 100%;
-		padding: 32px 24px;
-		animation: popIn 0.4s var(--transition-bounce);
+		min-height: 0;
+		padding: 32px 24px 48px;
 		max-width: 1200px;
 		margin: 0 auto;
 	}
@@ -116,22 +115,26 @@
 		font-size: 36px;
 		font-weight: 800;
 		letter-spacing: -0.03em;
-		background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+		background: linear-gradient(
+			135deg,
+			var(--heading-green) 0%,
+			var(--heading-green-light) 100%
+		);
 		-webkit-background-clip: text;
 		background-clip: text;
 		-webkit-text-fill-color: transparent;
-		text-shadow: 0 2px 10px rgba(165, 180, 252, 0.2);
+		text-shadow: 0 2px 10px rgba(45, 106, 79, 0.2);
 	}
 
 	.focus-date-pill {
 		font-size: 13px;
 		font-family: var(--font-mono);
-		color: var(--accent);
-		background: var(--accent-soft);
+		color: var(--heading-green);
+		background: rgba(45, 106, 79, 0.1);
 		padding: 6px 14px;
 		border-radius: 20px;
 		font-weight: 600;
-		border: 1px solid rgba(94, 114, 255, 0.2);
+		border: 1px solid rgba(45, 106, 79, 0.2);
 	}
 
 	.focus-summary {
@@ -175,7 +178,7 @@
 		border: 1px solid rgba(52, 211, 153, 0.3);
 	}
 
-	.low-energy-note {
+	.focus-mode-note {
 		font-size: 13px;
 		color: var(--text-muted);
 		margin-bottom: 20px;
@@ -187,7 +190,7 @@
 		display: flex;
 		flex: 1;
 		border-radius: 24px;
-		overflow-x: auto;
+		overflow: visible;
 		background: var(--bg-surface);
 	}
 </style>

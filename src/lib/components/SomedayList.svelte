@@ -67,7 +67,6 @@
 		box-shadow: var(--shadow-md);
 		border: 1px solid var(--border);
 		transition: all var(--transition-normal);
-		animation: popIn 0.4s var(--transition-bounce);
 	}
 
 	.someday-list:hover {

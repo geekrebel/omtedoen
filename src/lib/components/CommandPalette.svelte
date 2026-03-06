@@ -1,9 +1,10 @@
 <script lang="ts">
 	import {
 		setCurrentView,
-		toggleLowEnergyMode,
+		toggleFocusMode,
 		doFreshStart,
-		isLowEnergyMode,
+		isFocusMode,
+		saveSetting,
 	} from "$lib/stores/app.svelte.js";
 
 	interface Props {
@@ -33,10 +34,10 @@
 			},
 		},
 		{
-			label: "Week View",
-			description: "See the full week",
+			label: "Month View",
+			description: "See the full month",
 			action: () => {
-				setCurrentView("week");
+				setCurrentView("month");
 				onclose();
 			},
 		},
@@ -49,10 +50,11 @@
 			},
 		},
 		{
-			label: "Toggle Low Energy",
+			label: "Toggle Focus Mode",
 			description: "Show only must-do tasks",
 			action: () => {
-				toggleLowEnergyMode();
+				toggleFocusMode();
+				saveSetting("focusMode", String(isFocusMode()));
 				onclose();
 			},
 		},
@@ -232,8 +234,8 @@
 	}
 
 	.result-item.selected {
-		background: rgba(94, 114, 255, 0.15);
-		border-left: 3px solid var(--accent);
+		background: rgba(45, 106, 79, 0.15);
+		border-left: 3px solid var(--heading-green);
 		padding-left: 13px; /* Compensate for border */
 	}
 
@@ -252,7 +254,7 @@
 	}
 
 	.result-item.selected .result-label {
-		color: var(--accent);
+		color: var(--heading-green);
 	}
 
 	.result-desc {

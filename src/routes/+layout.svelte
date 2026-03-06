@@ -7,12 +7,14 @@
 		initStore,
 		getCurrentView,
 		setCurrentView,
-		isLowEnergyMode,
+		isFocusMode,
+		toggleFocusMode,
+		saveSetting,
 		getParkedTasks,
 		getSomedayLists,
 	} from "$lib/stores/app.svelte.js";
 	import FocusView from "$lib/components/FocusView.svelte";
-	import WeekView from "$lib/components/WeekView.svelte";
+	import MonthView from "$lib/components/MonthView.svelte";
 	import SomedayView from "$lib/components/SomedayView.svelte";
 	import SettingsView from "$lib/components/SettingsView.svelte";
 	import ParkingLot from "$lib/components/ParkingLot.svelte";
@@ -24,17 +26,27 @@
 	let ready = $state(false);
 	let paletteOpen = $state(false);
 	let captureOpen = $state(false);
+	let sidebarExpanded = $state(false);
 
 	let view = $derived(getCurrentView());
-	let lowEnergy = $derived(isLowEnergyMode());
+	let focusMode = $derived(isFocusMode());
 	let parkedTasks = $derived(getParkedTasks());
 	let somedayLists = $derived(getSomedayLists());
 
 	onMount(async () => {
-		const store = await createStore();
-		await initStore(store);
+		const { store, type } = await createStore();
+		await initStore(store, type);
 		ready = true;
 	});
+
+	function handleToggleFocusMode() {
+		toggleFocusMode();
+		saveSetting("focusMode", String(isFocusMode()));
+	}
+
+	function toggleSidebar() {
+		sidebarExpanded = !sidebarExpanded;
+	}
 
 	function handleGlobalKeydown(e: KeyboardEvent) {
 		// Cmd+K / Ctrl+K — command palette
@@ -55,7 +67,7 @@
 			}
 			if (e.key === "2") {
 				e.preventDefault();
-				setCurrentView("week");
+				setCurrentView("month");
 			}
 			if (e.key === "3") {
 				e.preventDefault();
@@ -72,8 +84,16 @@
 		<span>Loading...</span>
 	</div>
 {:else}
-	<div class="app" class:low-energy={lowEnergy}>
-		<nav class="sidebar">
+	<div class="app" class:focus-mode={focusMode}>
+		<nav class="sidebar" class:expanded={sidebarExpanded}>
+			<button
+				class="sidebar-toggle"
+				onclick={toggleSidebar}
+				aria-label="Toggle sidebar"
+			>
+				<span class="toggle-icon">{sidebarExpanded ? "✕" : "☰"}</span>
+			</button>
+
 			<div class="sidebar-brand">
 				<h2 class="brand-name">OmTeDoen</h2>
 			</div>
@@ -85,18 +105,18 @@
 					onclick={() => setCurrentView("focus")}
 				>
 					<span class="nav-icon">&#x25C9;</span>
-					<span>Today</span>
+					<span class="nav-label">Today</span>
 					<kbd class="nav-kbd">1</kbd>
 				</button>
 
-				{#if !lowEnergy}
+				{#if !focusMode}
 					<button
 						class="nav-item"
-						class:active={view === "week"}
-						onclick={() => setCurrentView("week")}
+						class:active={view === "month"}
+						onclick={() => setCurrentView("month")}
 					>
 						<span class="nav-icon">&#x2630;</span>
-						<span>Week</span>
+						<span class="nav-label">Month</span>
 						<kbd class="nav-kbd">2</kbd>
 					</button>
 				{/if}
@@ -107,7 +127,7 @@
 					onclick={() => setCurrentView("someday")}
 				>
 					<span class="nav-icon">&#x2606;</span>
-					<span>Someday</span>
+					<span class="nav-label">Someday</span>
 					<kbd class="nav-kbd">3</kbd>
 				</button>
 			</div>
@@ -126,7 +146,7 @@
 									style="background:{list.color}"
 								></span>
 							{/if}
-							{list.name}
+							<span class="nav-label">{list.name}</span>
 						</button>
 					{/each}
 				</div>
@@ -143,7 +163,7 @@
 			<div class="sidebar-footer">
 				<button class="nav-item" onclick={() => (captureOpen = true)}>
 					<span class="nav-icon">&#x26A1;</span>
-					<span>Quick Add</span>
+					<span class="nav-label">Quick Add</span>
 				</button>
 				<button
 					class="nav-item"
@@ -151,12 +171,24 @@
 					onclick={() => setCurrentView("settings")}
 				>
 					<span class="nav-icon">&#x2699;</span>
-					<span>Settings</span>
+					<span class="nav-label">Settings</span>
 				</button>
 			</div>
 		</nav>
 
 		<main class="main-content">
+			<div class="main-toolbar">
+				<button
+					class="focus-mode-btn"
+					class:active={focusMode}
+					onclick={handleToggleFocusMode}
+					aria-label="Toggle Focus Mode"
+				>
+					<span class="focus-icon">&#x25CE;</span>
+					<span>Focus Mode</span>
+				</button>
+			</div>
+
 			{#if view === "focus"}
 				<FocusView />
 				{#if parkedTasks.length > 0}
@@ -164,8 +196,8 @@
 						<ParkingLot />
 					</div>
 				{/if}
-			{:else if view === "week"}
-				<WeekView />
+			{:else if view === "month"}
+				<MonthView />
 			{:else if view === "someday"}
 				<SomedayView />
 			{:else if view === "settings"}
@@ -197,8 +229,9 @@
 		background: transparent;
 	}
 
+	/* ── Sidebar ── */
 	.sidebar {
-		width: var(--sidebar-width);
+		width: 56px;
 		background: var(--bg-sidebar);
 		backdrop-filter: var(--glass);
 		-webkit-backdrop-filter: var(--glass);
@@ -206,13 +239,51 @@
 		display: flex;
 		flex-direction: column;
 		flex-shrink: 0;
-		padding: 24px 16px;
+		padding: 12px 8px;
 		user-select: none;
 		z-index: 10;
 		box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
+		transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		overflow: hidden;
+	}
+
+	.sidebar.expanded {
+		width: 240px;
+		padding: 24px 16px;
+	}
+
+	.sidebar-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
+		font-size: 18px;
+		color: var(--text-secondary);
+		margin-bottom: 12px;
+		transition: all var(--transition-fast);
+		flex-shrink: 0;
+	}
+
+	.sidebar-toggle:hover {
+		background: rgba(0, 0, 0, 0.05);
+		color: var(--heading-green);
 	}
 
 	.sidebar-brand {
+		padding: 0 4px 20px;
+		overflow: hidden;
+		opacity: 0;
+		height: 0;
+		transition:
+			opacity 0.2s ease,
+			height 0.3s ease;
+	}
+
+	.sidebar.expanded .sidebar-brand {
+		opacity: 1;
+		height: auto;
 		padding: 0 8px 32px;
 	}
 
@@ -220,10 +291,15 @@
 		font-size: 20px;
 		font-weight: 800;
 		letter-spacing: -0.03em;
-		background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+		background: linear-gradient(
+			135deg,
+			var(--heading-green) 0%,
+			var(--heading-green-light) 100%
+		);
 		-webkit-background-clip: text;
 		background-clip: text;
 		-webkit-text-fill-color: transparent;
+		white-space: nowrap;
 	}
 
 	.sidebar-nav {
@@ -236,7 +312,7 @@
 		display: flex;
 		align-items: center;
 		gap: 12px;
-		padding: 10px 14px;
+		padding: 10px 12px;
 		border-radius: 12px;
 		font-size: 14px;
 		font-weight: 500;
@@ -245,19 +321,21 @@
 		width: 100%;
 		text-align: left;
 		position: relative;
+		white-space: nowrap;
+		overflow: hidden;
 	}
 
 	.nav-item:hover {
 		background: rgba(0, 0, 0, 0.05);
-		color: var(--accent);
+		color: var(--heading-green);
 		transform: translateX(2px);
 	}
 
 	.nav-item.active {
-		background: var(--accent-soft);
-		color: var(--accent);
+		background: rgba(45, 106, 79, 0.1);
+		color: var(--heading-green);
 		font-weight: 600;
-		box-shadow: inset 0 0 0 1px rgba(94, 114, 255, 0.2);
+		box-shadow: inset 0 0 0 1px rgba(45, 106, 79, 0.2);
 	}
 
 	.nav-item.active::before {
@@ -268,7 +346,7 @@
 		transform: translateY(-50%);
 		width: 4px;
 		height: 16px;
-		background: var(--accent);
+		background: var(--heading-green);
 		border-radius: 0 4px 4px 0;
 	}
 
@@ -277,9 +355,20 @@
 		text-align: center;
 		font-size: 16px;
 		opacity: 0.8;
+		flex-shrink: 0;
 	}
 
 	.nav-item.active .nav-icon {
+		opacity: 1;
+	}
+
+	.nav-label {
+		opacity: 0;
+		transition: opacity 0.15s ease;
+		overflow: hidden;
+	}
+
+	.sidebar.expanded .nav-label {
 		opacity: 1;
 	}
 
@@ -294,6 +383,11 @@
 		border-radius: 4px;
 		border: 1px solid var(--border);
 		transition: all var(--transition-fast);
+		opacity: 0;
+	}
+
+	.sidebar.expanded .nav-kbd {
+		opacity: 1;
 	}
 
 	.nav-item:hover .nav-kbd {
@@ -314,6 +408,12 @@
 		letter-spacing: 0.08em;
 		color: var(--text-muted);
 		padding: 0 14px 12px;
+		opacity: 0;
+		transition: opacity 0.15s ease;
+	}
+
+	.sidebar.expanded .section-label {
+		opacity: 1;
 	}
 
 	.sub-item {
@@ -337,11 +437,62 @@
 		gap: 6px;
 	}
 
+	/* ── Main content ── */
 	.main-content {
 		flex: 1;
 		overflow-y: auto;
 		position: relative;
 		z-index: 1;
+	}
+
+	.main-toolbar {
+		display: flex;
+		justify-content: flex-end;
+		padding: 12px 24px 0;
+		position: sticky;
+		top: 0;
+		z-index: 5;
+	}
+
+	.focus-mode-btn {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 18px;
+		border-radius: 20px;
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--text-secondary);
+		background: var(--bg-surface);
+		backdrop-filter: var(--glass);
+		-webkit-backdrop-filter: var(--glass);
+		border: 1px solid var(--border);
+		box-shadow: var(--shadow-sm);
+		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		cursor: pointer;
+	}
+
+	.focus-mode-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: var(--shadow-md);
+		border-color: var(--heading-green);
+		color: var(--heading-green);
+	}
+
+	.focus-mode-btn.active {
+		background: var(--heading-green);
+		color: #fff;
+		border-color: var(--heading-green);
+		box-shadow: 0 4px 16px rgba(45, 106, 79, 0.35);
+	}
+
+	.focus-mode-btn.active:hover {
+		background: var(--heading-green-light);
+		border-color: var(--heading-green-light);
+	}
+
+	.focus-icon {
+		font-size: 16px;
 	}
 
 	.focus-parking {

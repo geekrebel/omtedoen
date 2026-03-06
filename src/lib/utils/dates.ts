@@ -40,6 +40,56 @@ export function weekDates(iso: string): string[] {
 	return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
+/** Get the first day of the month for a given date */
+export function monthStart(iso: string): string {
+	const d = parseDate(iso);
+	return formatDate(new Date(d.getFullYear(), d.getMonth(), 1));
+}
+
+/** Get the last day of the month for a given date */
+export function monthEnd(iso: string): string {
+	const d = parseDate(iso);
+	return formatDate(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+}
+
+/** Get all dates for a calendar month grid (padded to full weeks, Mon-start) */
+export function monthDates(iso: string): string[] {
+	const first = monthStart(iso);
+	const last = monthEnd(iso);
+	// Start from the Monday of the week containing the 1st
+	const gridStart = weekStart(first);
+	// End on the Sunday of the week containing the last day
+	const lastDate = parseDate(last);
+	const lastDay = lastDate.getDay();
+	const gridEndOffset = lastDay === 0 ? 0 : 7 - lastDay;
+	const gridEnd = addDays(last, gridEndOffset);
+	// Build the array
+	const dates: string[] = [];
+	let current = gridStart;
+	while (current <= gridEnd) {
+		dates.push(current);
+		current = addDays(current, 1);
+	}
+	return dates;
+}
+
+/** Get a human-readable month label like "March 2026" */
+export function monthLabel(iso: string): string {
+	const d = parseDate(iso);
+	const monthNames = [
+		'January', 'February', 'March', 'April', 'May', 'June',
+		'July', 'August', 'September', 'October', 'November', 'December'
+	];
+	return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/** Add N months to a date string, clamping to last day of target month */
+export function addMonths(iso: string, n: number): string {
+	const d = parseDate(iso);
+	d.setMonth(d.getMonth() + n);
+	return formatDate(d);
+}
+
 /** Check if date A is before date B (both YYYY-MM-DD) */
 export function isBefore(a: string, b: string): boolean {
 	return a < b;

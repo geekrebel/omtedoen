@@ -1,4 +1,5 @@
 import type { TodoStore } from '$lib/storage/store.js';
+import type { StoreType } from '$lib/storage/index.js';
 import type { Task, List } from '$lib/core/types.js';
 import { createTask, createList } from '$lib/core/types.js';
 import { newId } from '$lib/core/ids.js';
@@ -12,16 +13,17 @@ import {
 	nextSortOrder,
 	sortOrderBetween
 } from '$lib/core/task-engine.js';
-import { extractRecurrence } from '$lib/core/recurrence.js';
+import { extractRecurrence, nextOccurrence } from '$lib/core/recurrence.js';
 
 // Reactive state
 let store: TodoStore | null = $state(null);
+let storeType: StoreType = $state('memory');
 let allTasks: Task[] = $state([]);
 let allLists: List[] = $state([]);
 let parkingLotId: string = $state('');
-let currentView: 'focus' | 'week' | 'someday' | 'settings' = $state('focus');
-let lowEnergyMode: boolean = $state(false);
-let weekOffset: number = $state(0); // 0 = current week, -1 = last week, etc.
+let currentView: 'focus' | 'month' | 'someday' | 'settings' = $state('focus');
+let focusMode: boolean = $state(false);
+let monthOffset: number = $state(0); // 0 = current month, -1 = last month, etc.
 
 // Derived state
 export function getTodayTasks(): Task[] {
@@ -63,7 +65,11 @@ export function getAllLists(): List[] {
 	return allLists;
 }
 
-export function getCurrentView(): 'focus' | 'week' | 'someday' | 'settings' {
+export function getStoreType(): StoreType {
+	return storeType;
+}
+
+export function getCurrentView(): 'focus' | 'month' | 'someday' | 'settings' {
 	return currentView;
 }
 
@@ -71,25 +77,26 @@ export function setCurrentView(view: typeof currentView) {
 	currentView = view;
 }
 
-export function isLowEnergyMode(): boolean {
-	return lowEnergyMode;
+export function isFocusMode(): boolean {
+	return focusMode;
 }
 
-export function toggleLowEnergyMode() {
-	lowEnergyMode = !lowEnergyMode;
+export function toggleFocusMode() {
+	focusMode = !focusMode;
 }
 
-export function getWeekOffset(): number {
-	return weekOffset;
+export function getMonthOffset(): number {
+	return monthOffset;
 }
 
-export function setWeekOffset(n: number) {
-	weekOffset = n;
+export function setMonthOffset(n: number) {
+	monthOffset = n;
 }
 
 // Initialization
-export async function initStore(s: TodoStore): Promise<void> {
+export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
 	store = s;
+	storeType = type;
 
 	// Load data
 	allLists = await store.getAllLists();
@@ -131,8 +138,8 @@ export async function initStore(s: TodoStore): Promise<void> {
 	}
 
 	// Load settings
-	const lowEnergy = await store.getSetting('lowEnergyMode');
-	lowEnergyMode = lowEnergy === 'true';
+	const fm = await store.getSetting('focusMode');
+	focusMode = fm === 'true';
 }
 
 // Actions
@@ -156,8 +163,18 @@ export async function addTask(title: string, dateTarget: string | null, listId: 
 		finalTitle = finalTitle.slice(6);
 	}
 
-	const tasksInContext = dateTarget
-		? getTasksForDate(dateTarget)
+	// For recurring tasks with a specific day, place the task on the next
+	// occurrence instead of today (e.g. "buy milk every monday" → next Monday)
+	let effectiveDate = dateTarget;
+	if (rule && effectiveDate) {
+		const next = nextOccurrence(rule, effectiveDate);
+		if (next) {
+			effectiveDate = next;
+		}
+	}
+
+	const tasksInContext = effectiveDate
+		? getTasksForDate(effectiveDate)
 		: listId
 			? getTasksForList(listId)
 			: [];
@@ -165,12 +182,12 @@ export async function addTask(title: string, dateTarget: string | null, listId: 
 	const task = createTask({
 		id: newId(),
 		title: finalTitle,
-		dateTarget,
+		dateTarget: effectiveDate,
 		listId,
 		priority,
 		sortOrder: nextSortOrder(tasksInContext),
 		recurrenceRule: ruleText,
-		recurrenceNext: rule ? (await import('$lib/core/recurrence.js')).nextOccurrence(rule, dateTarget || todayISO()) : null
+		recurrenceNext: rule ? nextOccurrence(rule, effectiveDate || todayISO()) : null
 	});
 
 	await store.upsertTask(task);
@@ -272,6 +289,17 @@ export async function deleteList(id: string): Promise<void> {
 		await store.softDeleteTask(task.id);
 	}
 	allTasks = allTasks.filter((t) => t.listId !== id);
+}
+
+// Data export
+export function exportData(): string {
+	const data = {
+		version: 1,
+		exportedAt: new Date().toISOString(),
+		tasks: allTasks.filter((t) => !t.deletedAt),
+		lists: allLists.filter((l) => !l.deletedAt)
+	};
+	return JSON.stringify(data, null, 2);
 }
 
 // Fresh start

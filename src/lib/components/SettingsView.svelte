@@ -1,14 +1,18 @@
 <script lang="ts">
 	import {
-		isLowEnergyMode,
-		toggleLowEnergyMode,
+		isFocusMode,
+		toggleFocusMode,
 		doFreshStart,
 		saveSetting,
+		exportData,
+		getStoreType,
 	} from "$lib/stores/app.svelte.js";
 
-	let lowEnergy = $derived(isLowEnergyMode());
+	let focusModeActive = $derived(isFocusMode());
+	let storageType = $derived(getStoreType());
 	let freshStartConfirm = $state(false);
 	let freshStartResult = $state<number | null>(null);
+	let exportMsg = $state<string | null>(null);
 
 	async function handleFreshStart() {
 		if (!freshStartConfirm) {
@@ -24,6 +28,19 @@
 	function cancelFreshStart() {
 		freshStartConfirm = false;
 	}
+
+	function handleExport() {
+		const json = exportData();
+		const blob = new Blob([json], { type: "application/json" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `omtedoen-backup-${new Date().toISOString().split("T")[0]}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
+		exportMsg = "Backup downloaded";
+		setTimeout(() => (exportMsg = null), 3000);
+	}
 </script>
 
 <div class="settings-view">
@@ -34,17 +51,20 @@
 
 		<div class="setting-row">
 			<div class="setting-info">
-				<span class="setting-label">Low Energy Mode</span>
+				<span class="setting-label">Focus Mode</span>
 				<span class="setting-desc"
 					>Only show must-do tasks. Simplify the interface.</span
 				>
 			</div>
 			<button
 				class="toggle-btn"
-				class:active={lowEnergy}
-				onclick={toggleLowEnergyMode}
+				class:active={focusModeActive}
+				onclick={() => {
+					toggleFocusMode();
+					saveSetting("focusMode", String(isFocusMode()));
+				}}
 				role="switch"
-				aria-checked={lowEnergy}
+				aria-checked={focusModeActive}
 			>
 				<span class="toggle-knob"></span>
 			</button>
@@ -53,6 +73,36 @@
 
 	<section class="setting-group">
 		<h2>Data</h2>
+
+		<div class="setting-row">
+			<div class="setting-info">
+				<span class="setting-label">Storage</span>
+				<span class="setting-desc">
+					{#if storageType === "sqlite"}
+						Tasks are stored in a local database and will persist across app updates.
+					{:else}
+						Tasks are in memory only and will be lost when the app closes.
+					{/if}
+				</span>
+			</div>
+			<span class="storage-badge" class:ok={storageType === "sqlite"} class:warn={storageType === "memory"}>
+				{storageType === "sqlite" ? "Persistent" : "Temporary"}
+			</span>
+		</div>
+
+		<div class="setting-row">
+			<div class="setting-info">
+				<span class="setting-label">Export Backup</span>
+				<span class="setting-desc"
+					>Download all your tasks as a JSON file. Good idea before updating.</span
+				>
+			</div>
+			{#if exportMsg}
+				<span class="fresh-result">{exportMsg}</span>
+			{:else}
+				<button class="action-btn" onclick={handleExport}>Export</button>
+			{/if}
+		</div>
 
 		<div class="setting-row">
 			<div class="setting-info">
@@ -87,7 +137,7 @@
 	<section class="setting-group">
 		<h2>About</h2>
 		<p class="about-text">
-			<strong>OmTeDoen</strong> v0.1.0<br />
+			<strong>OmTeDoen</strong> v0.2.0<br />
 			A simple, ADHD-friendly todo app.<br />
 			Built with Svelte + Tauri.
 		</p>
@@ -99,18 +149,21 @@
 		max-width: 640px;
 		margin: 0 auto;
 		padding: 48px 24px;
-		animation: popIn 0.4s var(--transition-bounce);
 	}
 
 	h1 {
 		font-size: 36px;
 		font-weight: 800;
 		letter-spacing: -0.03em;
-		background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+		background: linear-gradient(
+			135deg,
+			var(--heading-green) 0%,
+			var(--heading-green-light) 100%
+		);
 		-webkit-background-clip: text;
 		background-clip: text;
 		-webkit-text-fill-color: transparent;
-		text-shadow: 0 2px 10px rgba(165, 180, 252, 0.2);
+		text-shadow: 0 2px 10px rgba(45, 106, 79, 0.2);
 		margin-bottom: 40px;
 	}
 
@@ -123,7 +176,7 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		color: var(--accent);
+		color: var(--heading-green);
 		margin-bottom: 16px;
 		padding-left: 4px;
 	}
@@ -168,6 +221,25 @@
 		line-height: 1.5;
 	}
 
+	.storage-badge {
+		font-size: 13px;
+		font-weight: 600;
+		font-family: var(--font-mono);
+		padding: 4px 12px;
+		border-radius: 8px;
+		flex-shrink: 0;
+	}
+
+	.storage-badge.ok {
+		background: var(--success-soft);
+		color: var(--success);
+	}
+
+	.storage-badge.warn {
+		background: rgba(245, 158, 11, 0.15);
+		color: var(--priority-should);
+	}
+
 	.toggle-btn {
 		width: 48px;
 		height: 26px;
@@ -180,9 +252,9 @@
 	}
 
 	.toggle-btn.active {
-		background: var(--accent);
-		border-color: var(--accent);
-		box-shadow: 0 0 12px rgba(94, 114, 255, 0.4);
+		background: var(--heading-green);
+		border-color: var(--heading-green);
+		box-shadow: 0 0 12px rgba(45, 106, 79, 0.4);
 	}
 
 	.toggle-knob {
@@ -206,18 +278,18 @@
 		border-radius: 8px;
 		font-size: 14px;
 		font-weight: 600;
-		color: var(--accent);
-		background: var(--accent-soft);
-		border: 1px solid rgba(94, 114, 255, 0.2);
+		color: var(--heading-green);
+		background: rgba(45, 106, 79, 0.1);
+		border: 1px solid rgba(45, 106, 79, 0.2);
 		transition: all var(--transition-fast);
 		flex-shrink: 0;
 	}
 
 	.action-btn:hover {
-		background: var(--accent);
+		background: var(--heading-green);
 		color: #fff;
 		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(94, 114, 255, 0.3);
+		box-shadow: 0 4px 12px rgba(45, 106, 79, 0.3);
 	}
 
 	.confirm-btns {

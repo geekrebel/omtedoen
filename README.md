@@ -21,17 +21,19 @@
 
 ### 🔄 Smart Recurrence
 - Natural language scheduling: *"Buy milk every monday"*, *"Stand-up daily"*, *"Review goals every 2 weeks"*
-- Automatically creates the next instance when you complete one.
+- Tasks are placed on the **next occurrence date** automatically.
+- When you complete one, the next instance is created.
 
-### 🧘 Low Energy Mode
-- A calming monochromatic dark theme for when everything feels like too much.
-- Strips the UI to the bare essentials — just today's tasks.
+### 🎯 Focus Mode
+- Toggle from the main toolbar or Settings — no digging through menus.
+- Shows only **must-do** tasks, hiding should/want priorities to reduce overwhelm.
+- Keeps the normal light colour scheme — no jarring theme switch.
 
 ### 📋 Multiple Views
 | View | Shortcut | Description |
 |------|----------|-------------|
 | Focus | `⌘+1` | Yesterday · Today · Tomorrow |
-| Week | `⌘+2` | Full 7-day view with navigation |
+| Month | `⌘+2` | Calendar grid — click any day to view/add tasks in a popover |
 | Someday | `⌘+3` | Custom lists for future ideas |
 
 ### 🏷️ Priority System
@@ -126,13 +128,20 @@ For full architectural details, see [CONTEXT.md](./CONTEXT.md).
 
 ---
 
+### 💾 Data Safety
+- Tasks are stored in a **local SQLite database** that persists across app updates.
+- **Export Backup** — download all tasks as JSON from Settings before updating.
+- Storage indicator in Settings confirms whether your data is persistent.
+
+---
+
 ## 🗺 Roadmap
 
 - [ ] iCloud sync across devices
 - [ ] Native notifications & reminders
 - [ ] Task notes with rich markdown
 - [ ] Search across all tasks
-- [ ] Export / import
+- [ ] Import from JSON backup
 - [ ] Menu bar widget for quick-add
 
 ---

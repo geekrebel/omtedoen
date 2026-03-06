@@ -63,8 +63,8 @@ omtedoen/
 │         (sidebar, view routing, shortcuts)       │
 │                                                 │
 │  ┌──────────┐ ┌──────────┐ ┌────────────────┐  │
-│  │FocusView │ │ WeekView │ │  SomedayView   │  │
-│  │(3-day)   │ │(7-day)   │ │  (lists)       │  │
+│  │FocusView │ │MonthView │ │  SomedayView   │  │
+│  │(3-day)   │ │(calendar)│ │  (lists)       │  │
 │  └────┬─────┘ └────┬─────┘ └───────┬────────┘  │
 │       │             │               │            │
 │  ┌────┴─────────────┴───────────────┴────────┐  │
@@ -131,8 +131,10 @@ Pure functions with no side effects:
 
 ### Recurrence (`core/recurrence.ts`)
 
-- Parses natural language: `"every day"`, `"every weekday"`, `"every monday"`, `"every 2 weeks"`
+- Lightweight regex-based parser — no external NLP dependencies
+- Parses natural language: `"every day"`, `"every weekday"`, `"every monday"`, `"every 2 weeks"`, `"daily"`, `"weekly"`, `"monthly"`, `"yearly"`, `"annually"`
 - Extracted from task title during creation (e.g., `"Buy milk every monday"` → title: `"Buy milk"`, rule: `"every monday"`)
+- Tasks with recurrence are placed on the **next occurrence date** (not today)
 - When a recurring task is completed, a new instance is automatically created for the next occurrence date
 
 ### Store (`stores/app.svelte.ts`)
@@ -145,7 +147,9 @@ Pure functions with no side effects:
 
 - `TodoStore` interface (`store.ts`) — abstract contract
 - `SqliteStore` (`sqlite-store.ts`) — production implementation via `tauri-plugin-sql`
-- `MemoryStore` (`memory-store.ts`) — in-memory implementation for tests
+- `MemoryStore` (`memory-store.ts`) — in-memory fallback for dev/web (data lost on restart)
+- `createStore()` returns `{ store, type }` — the `type` (`'sqlite' | 'memory'`) is tracked in the app store and shown in Settings so the user can see whether storage is persistent
+- If SQLite initialization fails, the app logs a console error and falls back to memory store gracefully
 - Auto-runs migrations on first launch
 - Uses `INSERT OR REPLACE` for upserts
 
@@ -156,15 +160,15 @@ Pure functions with no side effects:
 | Component | Description |
 |-----------|-------------|
 | `FocusView` | 3-day view (yesterday, today, tomorrow) — the default view |
-| `WeekView` | 7-day view with week navigation |
+| `MonthView` | Calendar month grid with task counts; clicking a day opens an inline popover to view/add/complete tasks |
 | `SomedayView` | List-based views for "someday" tasks |
-| `DayColumn` | A single day's column — shows tasks and an input at the bottom |
+| `DayColumn` | A single day's column — shows tasks and an input at the bottom. Filters to must-only in Focus Mode |
 | `TaskItem` | Individual task row — checkbox, priority dot, title, edit mode, delete |
 | `TaskInput` | Text input for adding new tasks to a day/list |
 | `ParkingLot` | Shows auto-parked tasks with option to unpark |
-| `QuickCapture` | Modal overlay for rapid task capture (⌘+Shift+Space) |
+| `QuickCapture` | Modal overlay for rapid task capture (⌘+Shift+Space). Shows live recurrence preview and success feedback |
 | `CommandPalette` | Spotlight-like command menu (⌘+K) |
-| `SettingsView` | Settings page (currently just low energy mode toggle) |
+| `SettingsView` | Settings page — Focus Mode toggle, storage indicator, JSON export/backup, Fresh Start |
 | `SomedayList` | A single "someday" list card |
 
 ---
@@ -174,7 +178,7 @@ Pure functions with no side effects:
 | Shortcut | Action |
 |----------|--------|
 | `⌘+1` | Focus (3-day) view |
-| `⌘+2` | Week view |
+| `⌘+2` | Month view |
 | `⌘+3` | Someday view |
 | `⌘+K` | Command palette |
 | `⌘+Shift+Space` | Quick capture |
@@ -193,6 +197,8 @@ Pure functions with no side effects:
 | `--bg` | `#fdfbf7` | Cream background |
 | `--bg-surface` | `rgba(255,255,255,0.85)` | Card/panel backgrounds |
 | `--accent` | `#4f46e5` | Indigo accent |
+| `--heading-green` | `#2d6a4f` | Forest green — headings and titles |
+| `--heading-green-light` | `#52b788` | Light green — heading gradient end |
 | `--priority-must` | `#ef4444` | Red — must-do tasks |
 | `--priority-should` | `#f59e0b` | Amber — should-do tasks |
 | `--priority-want` | `#06b6d4` | Cyan — want-to-do tasks |
@@ -203,12 +209,13 @@ Pure functions with no side effects:
 - Primary: `Plus Jakarta Sans` (Google Fonts)
 - Monospace: `JetBrains Mono`
 
-### Low Energy Mode
-A toggle in settings that applies a calming, monochromatic dark theme:
-- All backgrounds become near-black
-- Accent/priority colors become shades of white/grey
-- Week nav and someday sidebar are hidden for reduced cognitive load
-- Activated via the `.low-energy` CSS class on the root `.app` element
+### Focus Mode
+A toggle available from the main toolbar (and in Settings):
+- Filters task lists to only show **must** priority tasks (completed tasks of any priority remain visible)
+- Hides the month navigation and someday sidebar for reduced cognitive load
+- **Keeps the normal light colour scheme** — no dark theme switch
+- Activated via the `.focus-mode` CSS class on the root `.app` element
+- Persisted to SQLite via the `focusMode` setting key
 
 ---
 
@@ -247,11 +254,14 @@ DMG is generated at: `$CARGO_TARGET_DIR/release/bundle/dmg/OmTeDoen_<version>_aa
 ## Data Persistence
 
 - Database: SQLite file managed by `tauri-plugin-sql`
-- Location: Tauri's app data directory (platform-specific)
+- Location: Tauri's app data directory (`~/Library/Application Support/com.omtedoen.todo/` on macOS)
+- **The database persists across app updates** as long as the bundle identifier (`com.omtedoen.todo` in `tauri.conf.json`) stays the same
 - Tasks are **soft-deleted** (set `deletedAt`, never removed from DB)
 - All timestamps are ISO 8601 strings
 - `fieldTimestamps` tracks per-field modification times (for future CRDT sync)
 - Steps are stored as JSON string in a single column
+- **Export/Backup**: Users can download all tasks as JSON from Settings → Export Backup
+- The Settings view shows a storage indicator ("Persistent" for SQLite, "Temporary" for memory fallback)
 
 ---
 
@@ -281,9 +291,9 @@ The `sync/` directory contains scaffolding for iCloud-based sync:
 - [ ] iCloud sync (scaffolding exists in `sync/`)
 - [ ] Native notifications / reminders
 - [ ] Task notes (markdown body — field exists, UI not implemented)
-- [ ] Drag tasks between days in Focus/Week views
+- [ ] Drag tasks between days in Focus views
 - [ ] Search across all tasks
 - [ ] Keyboard-only task navigation
-- [ ] Export/import functionality
-- [ ] Multiple theme options beyond low energy mode
+- [ ] Import from JSON backup
+- [ ] Multiple theme options
 - [ ] Widget / menu bar quick-add

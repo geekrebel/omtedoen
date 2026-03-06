@@ -49,7 +49,6 @@
 		padding: 48px 24px;
 		max-width: 960px;
 		margin: 0 auto;
-		animation: popIn 0.4s var(--transition-bounce);
 	}
 
 	.someday-header {

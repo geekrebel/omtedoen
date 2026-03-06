@@ -6,6 +6,7 @@
 		addTask,
 		moveTask,
 		getTasksForDate,
+		isFocusMode,
 	} from "$lib/stores/app.svelte.js";
 	import { dayLabel, isToday, isPast } from "$lib/utils/dates.js";
 	import { sortOrderBetween } from "$lib/core/task-engine.js";
@@ -18,7 +19,14 @@
 
 	let { date, compact = false }: Props = $props();
 
-	let tasks = $derived(getTasksForDate(date));
+	let allTasks = $derived(getTasksForDate(date));
+	let focusModeActive = $derived(isFocusMode());
+	// In focus mode, only show 'must' priority tasks + completed tasks
+	let tasks = $derived(
+		focusModeActive
+			? allTasks.filter((t) => t.priority === "must" || t.isCompleted)
+			: allTasks,
+	);
 	let label = $derived(dayLabel(date));
 	let today = $derived(isToday(date));
 	let past = $derived(isPast(date));
@@ -94,7 +102,7 @@
 		min-width: 0;
 		max-width: var(--max-column-width);
 		flex: 1;
-		padding: 16px;
+		padding: 16px 16px 20px;
 		border-right: 1px solid var(--border-light);
 		transition: background var(--transition-normal);
 	}
@@ -105,7 +113,7 @@
 
 	.day-column.today {
 		background: var(--bg-surface);
-		box-shadow: inset 0 0 0 1px rgba(94, 114, 255, 0.1);
+		box-shadow: inset 0 0 0 1px rgba(45, 106, 79, 0.1);
 	}
 
 	.day-header {
@@ -127,8 +135,8 @@
 	}
 
 	.today .day-label {
-		color: var(--accent);
-		text-shadow: 0 0 12px var(--accent-glow);
+		color: var(--heading-green);
+		text-shadow: 0 0 12px rgba(45, 106, 79, 0.25);
 	}
 
 	.task-count {
