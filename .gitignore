@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+dist/
+.svelte-kit/
+src-tauri/target/
+src-tauri/gen/
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+*.log
+check_output.txt
+package-lock 2.json
+package-lock 3.json
