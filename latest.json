@@ -1,11 +1,11 @@
 {
-    "version": "0.2.4",
-    "notes": "Critical update fix! Previous versions MUST manual install this release via the DMG file.",
+    "version": "0.2.6",
+    "notes": "Fixed auto-updater app relaunch failure.",
     "pub_date": "2026-03-07T00:00:00Z",
     "platforms": {
         "darwin-aarch64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVXBPMTQwbUlYNTB1V0dHR2xEd09yOERMMEh5OTIyNFBLdTVObHl1bCtZbFVQeWRxcmxUREVLRVRDQXRuUGxtY2dCUHBEc0dPVHlmamg0OS8wVitqbjNHY3dPZmZPb1FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyODQ0OTE5CWZpbGU6T21UZURvZW4uYXBwLnRhci5negpSQ3l4M01ZQTJtYzlWd01QbnoxOGJEbVBLNGx0QzkydW1CSkl2S2xEanBDZVoyT2dtc1ZOSmRDUHk0ZzJkTDF6MWVDd3NEZXlkbkpMR3JCQ2R3UE5BUT09Cg==",
-            "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.2.4/OmTeDoen.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVXBPMTQwbUlYNS9VR0lYcnFTWFBzdGdkd0RQTGZYeU9Vb2EvN2VFM2V5QjAwTHp2NDY0VVh6VzQ2enpScVhab1U1ZVJvdHFXU2RMZFdSM3FqUUo2RnBYY08zMGRKR0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyODY0MzQ2CWZpbGU6T21UZURvZW4uYXBwLnRhci5nego1d0hMdkVRZ2tvWXBmMDlKVGdZTC91Z0lwVUxubHp2MkVaZDlib3VicVpBekptR0gxMnNDQXFwYTdTTHVoU2Urd2ZvVU1EblpvRGw2T1dZS0JrMlVDUT09Cg==",
+            "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.2.6/OmTeDoen.app.tar.gz"
         }
     }
 }
