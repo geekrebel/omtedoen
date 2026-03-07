@@ -114,6 +114,7 @@
 				}}
 				role="switch"
 				aria-checked={focusModeActive}
+				aria-label="Toggle Focus Mode"
 			>
 				<span class="toggle-knob"></span>
 			</button>
@@ -194,7 +195,7 @@
 	<section class="setting-group">
 		<h2>About</h2>
 		<p class="about-text">
-			<strong>OmTeDoen</strong> v0.2.4<br />
+			<strong>OmTeDoen</strong> v0.2.5<br />
 			A simple, ADHD-friendly todo app.<br />
 			Built with Svelte + Tauri.
 		</p>

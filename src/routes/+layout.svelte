@@ -41,9 +41,9 @@
 		ready = true;
 
 		// Silent update check on startup
-		if (typeof window !== 'undefined' && '__TAURI__' in window) {
+		if (typeof window !== "undefined" && "__TAURI__" in window) {
 			try {
-				const { check } = await import('@tauri-apps/plugin-updater');
+				const { check } = await import("@tauri-apps/plugin-updater");
 				const update = await check();
 				if (update?.available) {
 					updateAvailable = { version: update.version };
@@ -57,8 +57,8 @@
 	async function installUpdate() {
 		updateInstalling = true;
 		try {
-			const { check } = await import('@tauri-apps/plugin-updater');
-			const { relaunch } = await import('@tauri-apps/plugin-process');
+			const { check } = await import("@tauri-apps/plugin-updater");
+			const { relaunch } = await import("@tauri-apps/plugin-process");
 			const update = await check();
 			if (update?.available) {
 				await update.downloadAndInstall();
@@ -84,8 +84,17 @@
 			e.preventDefault();
 			paletteOpen = !paletteOpen;
 		}
-		// Cmd+Shift+Space — quick capture
-		if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === " ") {
+		// Cmd+Shift+Space or 'q' — quick capture
+		if (
+			((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === " ") ||
+			(e.key === "q" &&
+				!e.metaKey &&
+				!e.ctrlKey &&
+				e.target instanceof HTMLElement &&
+				e.target.tagName !== "INPUT" &&
+				e.target.tagName !== "TEXTAREA" &&
+				!e.target.isContentEditable)
+		) {
 			e.preventDefault();
 			captureOpen = !captureOpen;
 		}
@@ -213,8 +222,15 @@
 					{#if updateInstalling}
 						<span class="update-installing">Installing...</span>
 					{:else}
-						<button class="update-install-btn" onclick={installUpdate}>Install & Restart</button>
-						<button class="update-dismiss-btn" onclick={() => (updateAvailable = null)} aria-label="Dismiss">&times;</button>
+						<button
+							class="update-install-btn"
+							onclick={installUpdate}>Install & Restart</button
+						>
+						<button
+							class="update-dismiss-btn"
+							onclick={() => (updateAvailable = null)}
+							aria-label="Dismiss">&times;</button
+						>
 					{/if}
 				</div>
 			{/if}

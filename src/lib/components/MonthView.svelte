@@ -129,7 +129,7 @@
 
         {#each weekRows as week}
             <div class="calendar-week">
-                {#each week as date (date)}
+                {#each week as date, i (date)}
                     {@const taskCount = getTaskCount(date)}
                     {@const completedCount = getCompletedCount(date)}
                     {@const inMonth = isCurrentMonth(date)}
@@ -168,6 +168,8 @@
                         {#if selectedDate === date}
                             <div
                                 class="day-popover"
+                                class:align-left={i === 0 || i === 1}
+                                class:align-right={i === 5 || i === 6}
                                 bind:this={popoverEl}
                                 role="dialog"
                                 aria-label="Tasks for {selectedLabel}"
@@ -179,8 +181,7 @@
                                     <button
                                         class="popover-close"
                                         onclick={closePopover}
-                                        aria-label="Close"
-                                        >&#x2715;</button
+                                        aria-label="Close">&#x2715;</button
                                     >
                                 </div>
 
@@ -458,6 +459,41 @@
         to {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
+        }
+    }
+
+    .day-popover.align-left {
+        left: 0;
+        transform: translateY(0);
+        animation: popoverInLeft 0.15s ease-out;
+    }
+
+    @keyframes popoverInLeft {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .day-popover.align-right {
+        left: auto;
+        right: 0;
+        transform: translateY(0);
+        animation: popoverInRight 0.15s ease-out;
+    }
+
+    @keyframes popoverInRight {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
     }
 

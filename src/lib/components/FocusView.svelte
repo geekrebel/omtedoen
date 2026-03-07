@@ -36,11 +36,6 @@
 
 <div class="focus-view">
 	<div class="header-container">
-		<div class="focus-header">
-			<h1 class="focus-title">Focus</h1>
-			<div class="focus-date-pill">{dateLabel}</div>
-		</div>
-
 		{#if todayTasks.length > 0}
 			<div class="focus-summary glass-panel">
 				{#if mustCount > 0}
@@ -96,45 +91,6 @@
 			justify-content: space-between;
 			margin-bottom: 24px;
 		}
-	}
-
-	.focus-header {
-		display: flex;
-		align-items: center;
-		gap: 16px;
-		margin-bottom: 16px; /* Space if wrapping */
-	}
-
-	@media (min-width: 768px) {
-		.focus-header {
-			margin-bottom: 0;
-		}
-	}
-
-	.focus-title {
-		font-size: 36px;
-		font-weight: 800;
-		letter-spacing: -0.03em;
-		background: linear-gradient(
-			135deg,
-			var(--heading-green) 0%,
-			var(--heading-green-light) 100%
-		);
-		-webkit-background-clip: text;
-		background-clip: text;
-		-webkit-text-fill-color: transparent;
-		text-shadow: 0 2px 10px rgba(45, 106, 79, 0.2);
-	}
-
-	.focus-date-pill {
-		font-size: 13px;
-		font-family: var(--font-mono);
-		color: var(--heading-green);
-		background: rgba(45, 106, 79, 0.1);
-		padding: 6px 14px;
-		border-radius: 20px;
-		font-weight: 600;
-		border: 1px solid rgba(45, 106, 79, 0.2);
 	}
 
 	.focus-summary {
