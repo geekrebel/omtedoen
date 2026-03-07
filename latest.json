@@ -4,7 +4,7 @@
     "pub_date": "2026-03-07T00:00:00Z",
     "platforms": {
         "darwin-aarch64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVXBPMTQwbUlYNXlFZmJEaytuQ25DWGdGMlNMN2pyRTVCZ09UNUk3TWlROEc0OE5JemVLOXUK",
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVXBPMTQwbUlYNXh1WTZuNERYMlkzTkF1VmdBbWR0NlFJcmxEYWxCWnJzdm5kbHBtem8wcTNoTHZ1V0hzQXk1VTk5a0dIMzZRY0l2cDlMT2FOZzloNFQ2MlpZRnZNQUF3PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyODY1MTkyCWZpbGU6T21UZURvZW4uYXBwLnRhci5negprUUFLQmIzbS9HTzhMY0xUVHFHbDdnbndIRXpYQmM1SzRjbGFnUmFlaXpIN1VvNTFkZTdwekpqRHhNenJCUmora3BORUh1bFpId0ZVcW56UDEwaEpDUT09Cg==",
             "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.2.7/OmTeDoen.app.tar.gz"
         }
     }
