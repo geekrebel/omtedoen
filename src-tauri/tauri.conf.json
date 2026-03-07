@@ -27,6 +27,9 @@
   },
   "bundle": {
     "active": true,
+    "macOS": {
+      "entitlements": "entitlements.mac.plist"
+    },
     "targets": "all",
     "createUpdaterArtifacts": "v1Compatible",
     "icon": [
