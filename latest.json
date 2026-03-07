@@ -1,11 +1,11 @@
 {
-    "version": "0.2.6",
-    "notes": "Fixed auto-updater app relaunch failure.",
+    "version": "0.2.7",
+    "notes": "Fixed database persistence so tasks correctly save across restarts.",
     "pub_date": "2026-03-07T00:00:00Z",
     "platforms": {
         "darwin-aarch64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVXBPMTQwbUlYNS9VR0lYcnFTWFBzdGdkd0RQTGZYeU9Vb2EvN2VFM2V5QjAwTHp2NDY0VVh6VzQ2enpScVhab1U1ZVJvdHFXU2RMZFdSM3FqUUo2RnBYY08zMGRKR0FJPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyODY0MzQ2CWZpbGU6T21UZURvZW4uYXBwLnRhci5nego1d0hMdkVRZ2tvWXBmMDlKVGdZTC91Z0lwVUxubHp2MkVaZDlib3VicVpBekptR0gxMnNDQXFwYTdTTHVoU2Urd2ZvVU1EblpvRGw2T1dZS0JrMlVDUT09Cg==",
-            "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.2.6/OmTeDoen.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVXBPMTQwbUlYNXlFZmJEaytuQ25DWGdGMlNMN2pyRTVCZ09UNUk3TWlROEc0OE5JemVLOXUK",
+            "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.2.7/OmTeDoen.app.tar.gz"
         }
     }
 }

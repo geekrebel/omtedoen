@@ -4,7 +4,7 @@ export type { TodoStore };
 export type StoreType = 'sqlite' | 'memory';
 
 export async function createStore(): Promise<{ store: TodoStore; type: StoreType }> {
-	if (typeof window !== 'undefined' && '__TAURI__' in window) {
+	if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
 		try {
 			const { SqliteStore } = await import('./sqlite-store.js');
 			const store = new SqliteStore();
