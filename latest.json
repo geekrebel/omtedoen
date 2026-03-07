@@ -1,11 +1,11 @@
 {
-    "version": "0.2.0",
-    "notes": "v0.2.0 release with ADHD-friendly features.",
+    "version": "0.2.3",
+    "notes": "v0.2.3 release with synced versions and confirmed update flow!",
     "pub_date": "2026-03-07T00:00:00Z",
     "platforms": {
         "darwin-aarch64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVXBPMTQwbUlYNTR4Q2Ivb0dvemtqL2RveE1RV3I4a0NJSGpJYWEvMjFoMTNOVjZWQzVuZHdqZ1VmQmpwN0J2Mk9mVlh0YUdtMG1UR0d3NTVMNGVrUkEvOWVLMDZtRGdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyODQxMzAzCWZpbGU6T21UZURvZW4uYXBwLnRhci5nego0Q0ltbG95VnFkZHc4NEhrVjBHbUJuR1JWNU9LcFNUUldqMjUxVzBnaG1kK0pNb0Y0NmhxdGtYOTNQVExwUWY2ajFPcFBPaDVTZGtVTFFMdW5laW9EQT09Cg==",
-            "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.2.0/OmTeDoen.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVXBPMTQwbUlYNThwcXFCY1E3TzBVZWxGVjNLRHE3eWdqT2VaMFFvdnMyOG5KNXlNS2k1WFBVTlpyb3JFa3FFeVR0bGdENnZuZ3g1QXJpYW55SmVjL1JMVlMyd0FjK3dFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyODQ0MTMxCWZpbGU6T21UZURvZW4uYXBwLnRhci5negpuSTJHa3MvcmJ3cE9wY2szd0U1ZW9ES1Q2bXY0am9Uc29uWTFrRWNtb1B5WTN2L0VBditmdVhRUXpVZkFMdjRmNDdJOUZMaWJQaWVqZ2JnSmxubXFCZz09Cg==",
+            "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.2.3/OmTeDoen.app.tar.gz"
         }
     }
 }

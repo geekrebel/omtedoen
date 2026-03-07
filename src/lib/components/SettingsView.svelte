@@ -13,7 +13,14 @@
 	let freshStartConfirm = $state(false);
 	let freshStartResult = $state<number | null>(null);
 	let exportMsg = $state<string | null>(null);
-	let updateStatus = $state<'idle' | 'checking' | 'downloading' | 'available' | 'up-to-date' | 'error'>('idle');
+	let updateStatus = $state<
+		| "idle"
+		| "checking"
+		| "downloading"
+		| "available"
+		| "up-to-date"
+		| "error"
+	>("idle");
 	let updateVersion = $state<string | null>(null);
 	let updateError = $state<string | null>(null);
 
@@ -33,40 +40,41 @@
 	}
 
 	async function handleCheckUpdate() {
-		if (updateStatus === 'checking' || updateStatus === 'downloading') return;
-		updateStatus = 'checking';
+		if (updateStatus === "checking" || updateStatus === "downloading")
+			return;
+		updateStatus = "checking";
 		updateError = null;
 		try {
-			const { check } = await import('@tauri-apps/plugin-updater');
+			const { check } = await import("@tauri-apps/plugin-updater");
 			const update = await check();
 			if (update?.available) {
 				updateVersion = update.version;
-				updateStatus = 'available';
+				updateStatus = "available";
 			} else {
-				updateStatus = 'up-to-date';
-				setTimeout(() => (updateStatus = 'idle'), 3000);
+				updateStatus = "up-to-date";
+				setTimeout(() => (updateStatus = "idle"), 3000);
 			}
 		} catch (e: any) {
-			updateError = e?.message || 'Update check failed';
-			updateStatus = 'error';
-			setTimeout(() => (updateStatus = 'idle'), 5000);
+			updateError = e?.message || "Update check failed";
+			updateStatus = "error";
+			setTimeout(() => (updateStatus = "idle"), 5000);
 		}
 	}
 
 	async function handleInstallUpdate() {
-		updateStatus = 'downloading';
+		updateStatus = "downloading";
 		try {
-			const { check } = await import('@tauri-apps/plugin-updater');
-			const { relaunch } = await import('@tauri-apps/plugin-process');
+			const { check } = await import("@tauri-apps/plugin-updater");
+			const { relaunch } = await import("@tauri-apps/plugin-process");
 			const update = await check();
 			if (update?.available) {
 				await update.downloadAndInstall();
 				await relaunch();
 			}
 		} catch (e: any) {
-			updateError = e?.message || 'Install failed';
-			updateStatus = 'error';
-			setTimeout(() => (updateStatus = 'idle'), 5000);
+			updateError = e?.message || "Install failed";
+			updateStatus = "error";
+			setTimeout(() => (updateStatus = "idle"), 5000);
 		}
 	}
 
@@ -120,13 +128,19 @@
 				<span class="setting-label">Storage</span>
 				<span class="setting-desc">
 					{#if storageType === "sqlite"}
-						Tasks are stored in a local database and will persist across app updates.
+						Tasks are stored in a local database and will persist
+						across app updates.
 					{:else}
-						Tasks are in memory only and will be lost when the app closes.
+						Tasks are in memory only and will be lost when the app
+						closes.
 					{/if}
 				</span>
 			</div>
-			<span class="storage-badge" class:ok={storageType === "sqlite"} class:warn={storageType === "memory"}>
+			<span
+				class="storage-badge"
+				class:ok={storageType === "sqlite"}
+				class:warn={storageType === "memory"}
+			>
 				{storageType === "sqlite" ? "Persistent" : "Temporary"}
 			</span>
 		</div>
@@ -135,13 +149,15 @@
 			<div class="setting-info">
 				<span class="setting-label">Export Backup</span>
 				<span class="setting-desc"
-					>Download all your tasks as a JSON file. Good idea before updating.</span
+					>Download all your tasks as a JSON file. Good idea before
+					updating.</span
 				>
 			</div>
 			{#if exportMsg}
 				<span class="fresh-result">{exportMsg}</span>
 			{:else}
-				<button class="action-btn" onclick={handleExport}>Export</button>
+				<button class="action-btn" onclick={handleExport}>Export</button
+				>
 			{/if}
 		</div>
 
@@ -178,7 +194,7 @@
 	<section class="setting-group">
 		<h2>About</h2>
 		<p class="about-text">
-			<strong>OmTeDoen</strong> v0.2.0<br />
+			<strong>OmTeDoen</strong> v0.2.4<br />
 			A simple, ADHD-friendly todo app.<br />
 			Built with Svelte + Tauri.
 		</p>
@@ -187,31 +203,37 @@
 			<div class="setting-info">
 				<span class="setting-label">Updates</span>
 				<span class="setting-desc">
-					{#if updateStatus === 'checking'}
+					{#if updateStatus === "checking"}
 						Checking for updates...
-					{:else if updateStatus === 'downloading'}
+					{:else if updateStatus === "downloading"}
 						Downloading update...
-					{:else if updateStatus === 'available'}
+					{:else if updateStatus === "available"}
 						Version {updateVersion} is available.
-					{:else if updateStatus === 'up-to-date'}
+					{:else if updateStatus === "up-to-date"}
 						You're up to date.
-					{:else if updateStatus === 'error'}
+					{:else if updateStatus === "error"}
 						{updateError}
 					{:else}
 						Check for new versions of OmTeDoen.
 					{/if}
 				</span>
 			</div>
-			{#if updateStatus === 'available'}
-				<button class="action-btn" onclick={handleInstallUpdate}>Install & Restart</button>
-			{:else if updateStatus === 'up-to-date'}
+			{#if updateStatus === "available"}
+				<button class="action-btn" onclick={handleInstallUpdate}
+					>Install & Restart</button
+				>
+			{:else if updateStatus === "up-to-date"}
 				<span class="fresh-result">Up to date</span>
-			{:else if updateStatus === 'error'}
-				<button class="action-btn" onclick={handleCheckUpdate}>Retry</button>
-			{:else if updateStatus === 'checking' || updateStatus === 'downloading'}
+			{:else if updateStatus === "error"}
+				<button class="action-btn" onclick={handleCheckUpdate}
+					>Retry</button
+				>
+			{:else if updateStatus === "checking" || updateStatus === "downloading"}
 				<span class="update-spinner"></span>
 			{:else}
-				<button class="action-btn" onclick={handleCheckUpdate}>Check for Updates</button>
+				<button class="action-btn" onclick={handleCheckUpdate}
+					>Check for Updates</button
+				>
 			{/if}
 		</div>
 	</section>
@@ -431,6 +453,8 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 </style>
