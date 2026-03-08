@@ -18,6 +18,8 @@ interface TaskRow {
 	list_id: string | null;
 	sort_order: number;
 	priority: string;
+	focused: number;
+	color_label: string;
 	parked: number;
 	parked_at: string | null;
 	rollover_count: number;
@@ -62,6 +64,8 @@ function rowToTask(row: TaskRow): Task {
 		listId: row.list_id,
 		sortOrder: row.sort_order,
 		priority: row.priority as Task['priority'],
+		focused: (row.focused ?? 0) === 1,
+		colorLabel: (row.color_label as Task['colorLabel']) ?? 'none',
 		parked: row.parked === 1,
 		parkedAt: row.parked_at,
 		rolloverCount: row.rollover_count,
@@ -152,6 +156,10 @@ export class SqliteStore implements TodoStore {
 			)
 		`);
 
+		// Migration: add focused and color_label columns
+		await db.execute(`ALTER TABLE tasks ADD COLUMN focused INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+		await db.execute(`ALTER TABLE tasks ADD COLUMN color_label TEXT NOT NULL DEFAULT 'none'`).catch(() => {});
+
 		await db.execute(
 			`CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date_target) WHERE deleted_at IS NULL`
 		);
@@ -217,15 +225,17 @@ export class SqliteStore implements TodoStore {
 	async upsertTask(task: Task): Promise<void> {
 		await this.db!.execute(
 			`INSERT INTO tasks (id, title, markdown_body, is_completed, completed_at,
-				date_target, list_id, sort_order, priority, parked, parked_at,
+				date_target, list_id, sort_order, priority, focused, color_label,
+				parked, parked_at,
 				rollover_count, recurrence_rule, recurrence_next, steps,
 				created_at, updated_at, deleted_at, field_timestamps, device_id)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
 			ON CONFLICT(id) DO UPDATE SET
 				title=excluded.title, markdown_body=excluded.markdown_body,
 				is_completed=excluded.is_completed, completed_at=excluded.completed_at,
 				date_target=excluded.date_target, list_id=excluded.list_id,
 				sort_order=excluded.sort_order, priority=excluded.priority,
+				focused=excluded.focused, color_label=excluded.color_label,
 				parked=excluded.parked, parked_at=excluded.parked_at,
 				rollover_count=excluded.rollover_count, recurrence_rule=excluded.recurrence_rule,
 				recurrence_next=excluded.recurrence_next, steps=excluded.steps,
@@ -241,6 +251,8 @@ export class SqliteStore implements TodoStore {
 				task.listId,
 				task.sortOrder,
 				task.priority,
+				task.focused ? 1 : 0,
+				task.colorLabel,
 				task.parked ? 1 : 0,
 				task.parkedAt,
 				task.rolloverCount,

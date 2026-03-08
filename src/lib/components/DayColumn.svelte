@@ -21,10 +21,10 @@
 
 	let allTasks = $derived(getTasksForDate(date));
 	let focusModeActive = $derived(isFocusMode());
-	// In focus mode, only show 'must' priority tasks + completed tasks
+	// In focus mode, only show tasks with lightning bolt on + completed tasks
 	let tasks = $derived(
 		focusModeActive
-			? allTasks.filter((t) => t.priority === "must" || t.isCompleted)
+			? allTasks.filter((t) => t.focused || t.isCompleted)
 			: allTasks,
 	);
 	let label = $derived(dayLabel(date));

@@ -12,6 +12,7 @@
 		saveSetting,
 		getParkedTasks,
 		getSomedayLists,
+		undo,
 	} from "$lib/stores/app.svelte.js";
 	import FocusView from "$lib/components/FocusView.svelte";
 	import MonthView from "$lib/components/MonthView.svelte";
@@ -97,6 +98,13 @@
 		) {
 			e.preventDefault();
 			captureOpen = !captureOpen;
+		}
+		// Cmd+Z / Ctrl+Z — undo
+		if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
+			const target = e.target as HTMLElement;
+			if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+			e.preventDefault();
+			undo();
 		}
 		// Cmd+1-4 — view switching
 		if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
@@ -241,9 +249,15 @@
 					class:active={focusMode}
 					onclick={handleToggleFocusMode}
 					aria-label="Toggle Focus Mode"
+					title="Click the bolt on each task to mark it for focus, then toggle this to show only those tasks"
 				>
-					<span class="focus-icon">&#x25CE;</span>
-					<span>Focus Mode</span>
+					<svg class="focus-icon" viewBox="0 0 16 16" fill="none">
+						<path
+							d="M8.5 1L3 9.5h4.5L6.5 15l6-8.5H8L8.5 1z"
+							fill="currentColor"
+						/>
+					</svg>
+					<span>Focus</span>
 				</button>
 			</div>
 
@@ -533,24 +547,31 @@
 	.focus-mode-btn:hover {
 		transform: translateY(-1px);
 		box-shadow: var(--shadow-md);
-		border-color: var(--heading-green);
-		color: var(--heading-green);
+		border-color: #eab308;
+		color: #b45309;
 	}
 
 	.focus-mode-btn.active {
-		background: var(--heading-green);
+		background: #eab308;
 		color: #fff;
-		border-color: var(--heading-green);
-		box-shadow: 0 4px 16px rgba(45, 106, 79, 0.35);
+		border-color: #d4a017;
+		box-shadow: 0 4px 16px rgba(234, 179, 8, 0.3);
 	}
 
 	.focus-mode-btn.active:hover {
-		background: var(--heading-green-light);
-		border-color: var(--heading-green-light);
+		background: #d4a017;
+		border-color: #ca8a04;
 	}
 
 	.focus-icon {
-		font-size: 16px;
+		width: 16px;
+		height: 16px;
+		color: #eab308;
+		flex-shrink: 0;
+	}
+
+	.focus-mode-btn.active .focus-icon {
+		color: #fff;
 	}
 
 	.focus-parking {

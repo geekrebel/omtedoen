@@ -51,7 +51,7 @@
 		},
 		{
 			label: "Toggle Focus Mode",
-			description: "Show only must-do tasks",
+			description: "Show only tasks with lightning bolt",
 			action: () => {
 				toggleFocusMode();
 				saveSetting("focusMode", String(isFocusMode()));

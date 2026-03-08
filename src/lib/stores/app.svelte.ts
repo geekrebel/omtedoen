@@ -26,6 +26,13 @@ let currentView: 'focus' | 'month' | 'someday' | 'settings' = $state('focus');
 let focusMode: boolean = $state(false);
 let monthOffset: number = $state(0); // 0 = current month, -1 = last month, etc.
 
+// Undo stack (stores snapshots of deleted tasks for undelete)
+interface UndoEntry {
+	type: 'delete';
+	task: Task;
+}
+let undoStack: UndoEntry[] = $state([]);
+
 // Derived state
 export function getTodayTasks(): Task[] {
 	const today = todayISO();
@@ -251,8 +258,24 @@ export async function toggleTask(id: string): Promise<void> {
 
 export async function deleteTask(id: string): Promise<void> {
 	if (!store) throw new Error('Store not initialized');
+	const task = allTasks.find((t) => t.id === id);
+	if (task) {
+		undoStack = [...undoStack.slice(-19), { type: 'delete', task: { ...task } }];
+	}
 	await store.softDeleteTask(id);
 	allTasks = allTasks.filter((t) => t.id !== id);
+}
+
+export async function undo(): Promise<boolean> {
+	if (!store || undoStack.length === 0) return false;
+	const entry = undoStack[undoStack.length - 1];
+	undoStack = undoStack.slice(0, -1);
+	if (entry.type === 'delete') {
+		const restored = { ...entry.task, deletedAt: null, updatedAt: new Date().toISOString() };
+		await store.upsertTask(restored);
+		allTasks = [...allTasks, restored];
+	}
+	return true;
 }
 
 export async function moveTask(taskId: string, newDate: string | null, newListId: string | null, newSortOrder: number): Promise<void> {

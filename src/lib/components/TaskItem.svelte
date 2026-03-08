@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Task, Priority } from "$lib/core/types.js";
+	import type { Task, ColorLabel } from "$lib/core/types.js";
 	import { renderMarkdown } from "$lib/core/markdown.js";
 	import {
 		toggleTask,
@@ -9,10 +9,9 @@
 
 	interface Props {
 		task: Task;
-		focused?: boolean;
 	}
 
-	let { task, focused = false }: Props = $props();
+	let { task }: Props = $props();
 
 	let editing = $state(false);
 	let editValue = $state("");
@@ -21,10 +20,11 @@
 	let justCompleted = $state(false);
 	let isHovered = $state(false);
 
-	const priorityColors: Record<Priority, string> = {
-		must: "var(--priority-must)",
-		should: "var(--priority-should)",
-		want: "var(--priority-want)",
+	const colorLabelValues: Record<ColorLabel, string> = {
+		none: "transparent",
+		red: "#ef4444",
+		amber: "#f59e0b",
+		teal: "#06b6d4",
 	};
 
 	function startEdit() {
@@ -65,20 +65,23 @@
 		deleteTask(task.id);
 	}
 
-	function setPriority(p: Priority) {
-		if (task.priority === p) return;
+	function toggleFocused() {
 		const now = new Date().toISOString();
 		updateTask({
 			...task,
-			priority: p,
-			fieldTimestamps: { ...task.fieldTimestamps, priority: now },
+			focused: !task.focused,
+			fieldTimestamps: { ...task.fieldTimestamps, focused: now },
 		});
 	}
 
-	function cyclePriority() {
-		const cycle: Priority[] = ["should", "must", "want"];
-		const idx = cycle.indexOf(task.priority);
-		setPriority(cycle[(idx + 1) % cycle.length]);
+	function setColorLabel(label: ColorLabel) {
+		const next = task.colorLabel === label ? "none" : label;
+		const now = new Date().toISOString();
+		updateTask({
+			...task,
+			colorLabel: next,
+			fieldTimestamps: { ...task.fieldTimestamps, colorLabel: now },
+		});
 	}
 
 	function handleWindowKeydown(e: KeyboardEvent) {
@@ -92,13 +95,13 @@
 
 		if (e.key === "1") {
 			e.preventDefault();
-			setPriority("must");
+			setColorLabel("red");
 		} else if (e.key === "2") {
 			e.preventDefault();
-			setPriority("should");
+			setColorLabel("amber");
 		} else if (e.key === "3") {
 			e.preventDefault();
-			setPriority("want");
+			setColorLabel("teal");
 		} else if (e.key === "Delete" || e.key === "Backspace") {
 			e.preventDefault();
 			handleDelete();
@@ -155,16 +158,26 @@
 
 	<button
 		data-no-dnd="true"
-		class="priority-btn"
-		onclick={cyclePriority}
-		title={task.priority}
-		aria-label="Priority: {task.priority}"
+		class="bolt-btn"
+		class:active={task.focused}
+		onclick={toggleFocused}
+		aria-label={task.focused ? "Remove from focus" : "Add to focus"}
+		title={task.focused ? "Remove from focus" : "Add to focus"}
 	>
-		<span
-			class="priority-dot"
-			style="background: {priorityColors[task.priority]}"
-		></span>
+		<svg viewBox="0 0 16 16" fill="none" class="bolt-icon">
+			<path
+				d="M8.5 1L3 9.5h4.5L6.5 15l6-8.5H8L8.5 1z"
+				fill="currentColor"
+			/>
+		</svg>
 	</button>
+
+	{#if task.colorLabel !== "none"}
+		<span
+			class="color-label"
+			style="background: {colorLabelValues[task.colorLabel]}"
+		></span>
+	{/if}
 
 	{#if editing}
 		<input
@@ -222,7 +235,7 @@
 		{#each task.steps as step, i}
 			<div class="step-item" class:step-done={step.done}>
 				<button class="step-check" onclick={() => toggleStep(i)}>
-					{step.done ? "☑" : "☐"}
+					{step.done ? "\u2611" : "\u2610"}
 				</button>
 				<span class:line-through={step.done}>{step.text}</span>
 			</div>
@@ -314,34 +327,13 @@
 		background: var(--success);
 	}
 
-	.priority-btn {
+	/* Color label — gentle rounded square, Trello-style */
+	.color-label {
 		flex-shrink: 0;
-		width: 24px;
-		height: 24px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		background: transparent;
-		transition: all var(--transition-fast);
-	}
-
-	.priority-btn:hover {
-		background: rgba(0, 0, 0, 0.05);
-	}
-
-	.priority-dot {
 		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		padding: 0;
-		box-shadow: 0 0 8px currentColor;
-		opacity: 0.9;
-		transition: transform var(--transition-bounce);
-	}
-
-	.priority-btn:hover .priority-dot {
-		transform: scale(1.5);
+		height: 20px;
+		border-radius: 4px;
+		opacity: 0.75;
 	}
 
 	.task-title {
@@ -391,6 +383,43 @@
 		border-radius: 12px;
 		border: 1px solid var(--border);
 		flex-shrink: 0;
+	}
+
+	/* Lightning bolt button */
+	.bolt-btn {
+		flex-shrink: 0;
+		width: 20px;
+		height: 20px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+		background: transparent;
+		color: var(--border);
+		transition: all var(--transition-fast);
+		padding: 0;
+		opacity: 0.45;
+	}
+
+	.bolt-btn:hover {
+		opacity: 1;
+		color: #d4a017;
+		background: rgba(234, 179, 8, 0.08);
+	}
+
+	.bolt-btn.active {
+		opacity: 1;
+		color: #eab308;
+		filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.3));
+	}
+
+	.bolt-btn.active:hover {
+		color: #ca8a04;
+	}
+
+	.bolt-icon {
+		width: 16px;
+		height: 16px;
 	}
 
 	.delete-btn {

@@ -102,7 +102,7 @@
 			<div class="setting-info">
 				<span class="setting-label">Focus Mode</span>
 				<span class="setting-desc"
-					>Only show must-do tasks. Simplify the interface.</span
+					>Only show tasks with the lightning bolt on.</span
 				>
 			</div>
 			<button
@@ -195,7 +195,7 @@
 	<section class="setting-group">
 		<h2>About</h2>
 		<p class="about-text">
-			<strong>OmTeDoen</strong> v0.2.7<br />
+			<strong>OmTeDoen</strong> v0.3.0<br />
 			A simple, ADHD-friendly todo app.<br />
 			Built with Svelte + Tauri.
 		</p>

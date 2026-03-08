@@ -1,4 +1,5 @@
 export type Priority = 'must' | 'should' | 'want';
+export type ColorLabel = 'none' | 'red' | 'amber' | 'teal';
 
 export interface TaskStep {
 	id: string;
@@ -20,6 +21,8 @@ export interface Task {
 
 	// ADHD features
 	priority: Priority;
+	focused: boolean;
+	colorLabel: ColorLabel;
 	parked: boolean;
 	parkedAt: string | null;
 	rolloverCount: number;
@@ -78,6 +81,8 @@ export function createTask(overrides: Partial<Task> & { id: string; title: strin
 		listId: null,
 		sortOrder: 0,
 		priority: 'should',
+		focused: false,
+		colorLabel: 'none',
 		parked: false,
 		parkedAt: null,
 		rolloverCount: 0,
