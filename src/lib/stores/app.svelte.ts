@@ -26,6 +26,51 @@ let currentView: 'focus' | 'month' | 'someday' | 'settings' = $state('focus');
 let focusMode: boolean = $state(false);
 let monthOffset: number = $state(0); // 0 = current month, -1 = last month, etc.
 
+// Reactive "today" that updates when the calendar date changes
+let today: string = $state(todayISO());
+
+function checkDateChange() {
+	const now = todayISO();
+	if (now !== today) {
+		today = now;
+		// Re-run rollover for the new day
+		runDailyMaintenance();
+	}
+}
+
+// Check every 30 seconds and on window focus/visibility
+if (typeof window !== 'undefined') {
+	setInterval(checkDateChange, 30_000);
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'visible') checkDateChange();
+	});
+	window.addEventListener('focus', checkDateChange);
+}
+
+async function runDailyMaintenance() {
+	if (!store) return;
+	const now = todayISO();
+	const rolled = rolloverTasks(allTasks, now);
+	if (rolled.length > 0) {
+		await store.upsertTasks(rolled);
+	}
+	const parked = parkStaleTasks(
+		rolled.length > 0 ? allTasks.map((t) => rolled.find((r) => r.id === t.id) || t) : allTasks,
+		parkingLotId
+	);
+	if (parked.length > 0) {
+		await store.upsertTasks(parked);
+	}
+	if (rolled.length > 0 || parked.length > 0) {
+		allTasks = await store.getAllTasks();
+	}
+}
+
+/** Get the current reactive today value */
+export function getToday(): string {
+	return today;
+}
+
 // Undo stack (stores snapshots of deleted tasks for undelete)
 interface UndoEntry {
 	type: 'delete';
@@ -35,9 +80,9 @@ let undoStack: UndoEntry[] = $state([]);
 
 // Derived state
 export function getTodayTasks(): Task[] {
-	const today = todayISO();
+	const todayDate = today; // reactive dependency on today
 	return allTasks
-		.filter((t) => t.dateTarget === today && !t.deletedAt && !t.parked)
+		.filter((t) => t.dateTarget === todayDate && !t.deletedAt && !t.parked)
 		.sort((a, b) => {
 			if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
 			return a.sortOrder - b.sortOrder;
@@ -134,8 +179,8 @@ export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
 	parkingLotId = parkingLot.id;
 
 	// Run daily rollover
-	const today = todayISO();
-	const rolled = rolloverTasks(allTasks, today);
+	const todayDate = todayISO();
+	const rolled = rolloverTasks(allTasks, todayDate);
 	if (rolled.length > 0) {
 		await store.upsertTasks(rolled);
 	}
@@ -310,9 +355,9 @@ export async function moveTask(taskId: string, newDate: string | null, newListId
 }
 
 export async function unparkTask(taskId: string): Promise<void> {
-	const today = todayISO();
-	const todayTasks = getTasksForDate(today);
-	await moveTask(taskId, today, null, nextSortOrder(todayTasks));
+	const todayDate = todayISO();
+	const todayTasks = getTasksForDate(todayDate);
+	await moveTask(taskId, todayDate, null, nextSortOrder(todayTasks));
 }
 
 // Lists

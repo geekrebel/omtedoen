@@ -7,8 +7,9 @@
 		moveTask,
 		getTasksForDate,
 		isFocusMode,
+		getToday,
 	} from "$lib/stores/app.svelte.js";
-	import { dayLabel, isToday, isPast } from "$lib/utils/dates.js";
+	import { dayLabel } from "$lib/utils/dates.js";
 	import { sortOrderBetween } from "$lib/core/task-engine.js";
 	import { dndzone } from "svelte-dnd-action";
 
@@ -28,9 +29,10 @@
 			? allTasks.filter((t) => t.focused || t.isCompleted)
 			: allTasks,
 	);
-	let label = $derived(dayLabel(date));
-	let today = $derived(isToday(date));
-	let past = $derived(isPast(date));
+	let todayDate = $derived(getToday());
+	let label = $derived(dayLabel(date, todayDate));
+	let today = $derived(date === todayDate);
+	let past = $derived(date < todayDate);
 
 	// svelte-dnd-action requires items to be mutable state that is updated synchronously
 	// in onconsider and onfinalize.

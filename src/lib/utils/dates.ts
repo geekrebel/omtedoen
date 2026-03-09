@@ -101,8 +101,8 @@ export function isSameDay(a: string, b: string): boolean {
 }
 
 /** Get a human-readable day label */
-export function dayLabel(iso: string): string {
-	const today = todayISO();
+export function dayLabel(iso: string, today?: string): string {
+	if (!today) today = todayISO();
 	if (iso === today) return 'Today';
 	if (iso === addDays(today, 1)) return 'Tomorrow';
 	if (iso === addDays(today, -1)) return 'Yesterday';

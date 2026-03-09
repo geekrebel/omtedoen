@@ -6,23 +6,21 @@
         addTask,
         toggleTask,
         deleteTask,
+        getToday,
     } from "$lib/stores/app.svelte.js";
     import {
-        todayISO,
         monthDates,
         monthLabel,
         monthStart,
         addMonths,
-        isToday,
-        isPast,
         dayLabel,
     } from "$lib/utils/dates.js";
 
     let offset = $derived(getMonthOffset());
+    let todayDate = $derived(getToday());
 
     let refDate = $derived(() => {
-        const today = todayISO();
-        return addMonths(monthStart(today), offset);
+        return addMonths(monthStart(todayDate), offset);
     });
 
     let ref = $derived(refDate());
@@ -133,8 +131,8 @@
                     {@const taskCount = getTaskCount(date)}
                     {@const completedCount = getCompletedCount(date)}
                     {@const inMonth = isCurrentMonth(date)}
-                    {@const today = isToday(date)}
-                    {@const past = isPast(date)}
+                    {@const today = date === todayDate}
+                    {@const past = date < todayDate}
                     <div class="calendar-day-wrapper">
                         <button
                             class="calendar-day"

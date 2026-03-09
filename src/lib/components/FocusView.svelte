@@ -1,7 +1,7 @@
 <script lang="ts">
 	import DayColumn from "./DayColumn.svelte";
-	import { isFocusMode } from "$lib/stores/app.svelte.js";
-	import { todayISO, addDays } from "$lib/utils/dates.js";
+	import { isFocusMode, getToday } from "$lib/stores/app.svelte.js";
+	import { addDays } from "$lib/utils/dates.js";
 
 	interface Props {
 		onToggleFocus?: () => void;
@@ -12,7 +12,7 @@
 	let focusMode = $derived(isFocusMode());
 
 	// Calculate the 3 days
-	let todayStr = $derived(todayISO());
+	let todayStr = $derived(getToday());
 	let yesterdayStr = $derived(addDays(todayStr, -1));
 	let tomorrowStr = $derived(addDays(todayStr, 1));
 
