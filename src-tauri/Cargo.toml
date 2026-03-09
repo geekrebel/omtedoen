@@ -1,6 +1,6 @@
 [package]
 name = "omtedoen"
-version = "0.3.8"
+version = "0.3.9"
 description = "An ADHD-friendly todo app"
 authors = ["you"]
 license = ""

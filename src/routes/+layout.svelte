@@ -78,51 +78,41 @@
 		if (isFocusMode()) {
 			sidebarExpanded = false;
 			// Resize window to narrow focus width
-			if (typeof window !== "undefined" && "__TAURI__" in window) {
-				try {
-					const { getCurrentWindow } = await import(
-						"@tauri-apps/api/window"
-					);
-					const { LogicalSize, PhysicalSize } = await import(
-						"@tauri-apps/api/dpi"
-					);
-					const win = getCurrentWindow();
-					const size = await win.innerSize();
-					savedWindowSize = {
-						width: size.width,
-						height: size.height,
-					};
-					await win.setMinSize(new LogicalSize(380, 500));
-					const logicalHeight =
-						size.height / (window.devicePixelRatio || 1);
-					await win.setSize(new LogicalSize(480, logicalHeight));
-				} catch {}
-			}
-		} else {
+			try {
+				const { getCurrentWindow } = await import(
+					"@tauri-apps/api/window"
+				);
+				const { LogicalSize } = await import("@tauri-apps/api/dpi");
+				const win = getCurrentWindow();
+				const size = await win.innerSize();
+				savedWindowSize = {
+					width: size.width,
+					height: size.height,
+				};
+				const logicalHeight =
+					size.height / (window.devicePixelRatio || 1);
+				await win.setMinSize(new LogicalSize(380, 500));
+				await win.setSize(new LogicalSize(480, logicalHeight));
+			} catch {}
+		} else if (savedWindowSize) {
 			// Restore previous window size
-			if (
-				savedWindowSize &&
-				typeof window !== "undefined" &&
-				"__TAURI__" in window
-			) {
-				try {
-					const { getCurrentWindow } = await import(
-						"@tauri-apps/api/window"
-					);
-					const { LogicalSize, PhysicalSize } = await import(
-						"@tauri-apps/api/dpi"
-					);
-					const win = getCurrentWindow();
-					await win.setMinSize(new LogicalSize(700, 500));
-					await win.setSize(
-						new PhysicalSize(
-							savedWindowSize.width,
-							savedWindowSize.height,
-						),
-					);
-					savedWindowSize = null;
-				} catch {}
-			}
+			try {
+				const { getCurrentWindow } = await import(
+					"@tauri-apps/api/window"
+				);
+				const { LogicalSize, PhysicalSize } = await import(
+					"@tauri-apps/api/dpi"
+				);
+				const win = getCurrentWindow();
+				await win.setMinSize(new LogicalSize(700, 500));
+				await win.setSize(
+					new PhysicalSize(
+						savedWindowSize.width,
+						savedWindowSize.height,
+					),
+				);
+				savedWindowSize = null;
+			} catch {}
 		}
 	}
 

@@ -195,7 +195,7 @@
 	<section class="setting-group">
 		<h2>About</h2>
 		<p class="about-text">
-			<strong>OmTeDoen</strong> v0.3.8<br />
+			<strong>OmTeDoen</strong> v0.3.9<br />
 			A simple, ADHD-friendly todo app.<br />
 			Built with Svelte + Tauri.
 		</p>
