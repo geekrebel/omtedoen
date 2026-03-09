@@ -193,9 +193,61 @@
 	</section>
 
 	<section class="setting-group">
+		<h2>Keyboard Shortcuts</h2>
+
+		<div class="shortcuts-grid">
+			<div class="shortcut-row">
+				<kbd>&#8984; Shift F</kbd>
+				<span>Toggle focus mode</span>
+			</div>
+			<div class="shortcut-row">
+				<kbd>&#8984; K</kbd>
+				<span>Command palette</span>
+			</div>
+			<div class="shortcut-row">
+				<kbd>&#8984; Shift Space</kbd>
+				<span>Quick capture</span>
+			</div>
+			<div class="shortcut-row">
+				<kbd>Q</kbd>
+				<span>Quick capture</span>
+			</div>
+			<div class="shortcut-row">
+				<kbd>&#8984; Z</kbd>
+				<span>Undo</span>
+			</div>
+			<div class="shortcut-row">
+				<kbd>&#8984; 1</kbd>
+				<span>Focus view</span>
+			</div>
+			<div class="shortcut-row">
+				<kbd>&#8984; 2</kbd>
+				<span>Month view</span>
+			</div>
+			<div class="shortcut-row">
+				<kbd>&#8984; 3</kbd>
+				<span>Someday lists</span>
+			</div>
+			<div class="shortcut-section-label">While hovering a task</div>
+			<div class="shortcut-row">
+				<kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>
+				<span>Set color label</span>
+			</div>
+			<div class="shortcut-row">
+				<kbd>5</kbd>
+				<span>Toggle lightning bolt</span>
+			</div>
+			<div class="shortcut-row">
+				<kbd>Delete</kbd>
+				<span>Delete task</span>
+			</div>
+		</div>
+	</section>
+
+	<section class="setting-group">
 		<h2>About</h2>
 		<p class="about-text">
-			<strong>OmTeDoen</strong> v0.3.9<br />
+			<strong>OmTeDoen</strong> v0.4.0<br />
 			A simple, ADHD-friendly todo app.<br />
 			Built with Svelte + Tauri.
 		</p>
@@ -451,6 +503,59 @@
 		border-radius: 50%;
 		animation: spin 0.8s linear infinite;
 		flex-shrink: 0;
+	}
+
+	.shortcuts-grid {
+		background: var(--bg-surface);
+		backdrop-filter: var(--glass);
+		-webkit-backdrop-filter: var(--glass);
+		border-radius: 16px;
+		border: 1px solid var(--border-light);
+		box-shadow: var(--shadow-sm);
+		padding: 16px 24px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.shortcut-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.shortcut-row span {
+		margin-left: auto;
+		font-size: 14px;
+		color: var(--text-secondary);
+	}
+
+	.shortcut-section-label {
+		font-size: 11px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--text-muted);
+		margin-top: 8px;
+		padding-top: 12px;
+		border-top: 1px solid var(--border-light);
+	}
+
+	kbd {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 28px;
+		height: 26px;
+		padding: 0 8px;
+		font-size: 12px;
+		font-weight: 600;
+		font-family: var(--font-mono);
+		color: var(--text);
+		background: var(--bg-hover);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 	}
 
 	@keyframes spin {

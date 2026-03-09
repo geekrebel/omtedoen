@@ -147,6 +147,11 @@
 			e.preventDefault();
 			undo();
 		}
+		// Cmd+Shift+F — toggle focus mode
+		if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
+			e.preventDefault();
+			handleToggleFocusMode();
+		}
 		// Cmd+1-4 — view switching
 		if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
 			if (e.key === "1") {
