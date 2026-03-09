@@ -83,22 +83,19 @@
 					const { getCurrentWindow } = await import(
 						"@tauri-apps/api/window"
 					);
+					const { LogicalSize, PhysicalSize } = await import(
+						"@tauri-apps/api/dpi"
+					);
 					const win = getCurrentWindow();
 					const size = await win.innerSize();
 					savedWindowSize = {
 						width: size.width,
 						height: size.height,
 					};
-					await win.setMinSize({
-						type: "Logical",
-						width: 380,
-						height: 500,
-					});
-					await win.setSize({
-						type: "Logical",
-						width: 480,
-						height: size.height / (window.devicePixelRatio || 1),
-					});
+					await win.setMinSize(new LogicalSize(380, 500));
+					const logicalHeight =
+						size.height / (window.devicePixelRatio || 1);
+					await win.setSize(new LogicalSize(480, logicalHeight));
 				} catch {}
 			}
 		} else {
@@ -112,17 +109,17 @@
 					const { getCurrentWindow } = await import(
 						"@tauri-apps/api/window"
 					);
+					const { LogicalSize, PhysicalSize } = await import(
+						"@tauri-apps/api/dpi"
+					);
 					const win = getCurrentWindow();
-					await win.setMinSize({
-						type: "Logical",
-						width: 700,
-						height: 500,
-					});
-					await win.setSize({
-						type: "Physical",
-						width: savedWindowSize.width,
-						height: savedWindowSize.height,
-					});
+					await win.setMinSize(new LogicalSize(700, 500));
+					await win.setSize(
+						new PhysicalSize(
+							savedWindowSize.width,
+							savedWindowSize.height,
+						),
+					);
 					savedWindowSize = null;
 				} catch {}
 			}
