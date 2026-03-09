@@ -102,6 +102,9 @@
 		} else if (e.key === "3") {
 			e.preventDefault();
 			setColorLabel("teal");
+		} else if (e.key === "5") {
+			e.preventDefault();
+			toggleFocused();
 		} else if (e.key === "Delete" || e.key === "Backspace") {
 			e.preventDefault();
 			handleDelete();

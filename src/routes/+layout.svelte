@@ -73,6 +73,9 @@
 	function handleToggleFocusMode() {
 		toggleFocusMode();
 		saveSetting("focusMode", String(isFocusMode()));
+		if (isFocusMode()) {
+			sidebarExpanded = false;
+		}
 	}
 
 	function toggleSidebar() {
@@ -619,6 +622,19 @@
 	.update-dismiss-btn:hover {
 		background: rgba(0, 0, 0, 0.05);
 		color: var(--text);
+	}
+
+	/* Focus mode: hide sidebar entirely */
+	.app.focus-mode .sidebar,
+	.app.focus-mode .sidebar.expanded {
+		width: 0;
+		padding: 0;
+		border: none;
+		overflow: hidden;
+	}
+
+	.app.focus-mode .main-content {
+		max-width: 580px;
 	}
 
 	.update-installing {

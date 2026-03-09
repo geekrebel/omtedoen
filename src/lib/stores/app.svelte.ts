@@ -218,6 +218,7 @@ export async function addTask(
 		dateTarget: effectiveDate,
 		listId,
 		priority,
+		focused: effectiveDate === todayISO(),
 		sortOrder: nextSortOrder(tasksInContext),
 		recurrenceRule: ruleText,
 		recurrenceNext: rule ? nextOccurrence(rule, effectiveDate || todayISO()) : null

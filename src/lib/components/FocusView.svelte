@@ -15,9 +15,15 @@
 
 <div class="focus-view">
 	<div class="focus-columns glass-panel">
-		{#each displayDays as date (date)}
-			<DayColumn {date} />
-		{/each}
+		<div class="focus-col focus-col-yesterday">
+			<DayColumn date={yesterdayStr} />
+		</div>
+		<div class="focus-col focus-col-today">
+			<DayColumn date={todayStr} />
+		</div>
+		<div class="focus-col focus-col-tomorrow">
+			<DayColumn date={tomorrowStr} />
+		</div>
 	</div>
 </div>
 
@@ -37,5 +43,14 @@
 		border-radius: 24px;
 		overflow: visible;
 		background: var(--bg-surface);
+	}
+
+	.focus-col {
+		flex: 1;
+		min-width: 0;
+		transition:
+			flex 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+			max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+			opacity 0.3s ease;
 	}
 </style>

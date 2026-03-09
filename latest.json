@@ -1,11 +1,11 @@
 {
-    "version": "0.2.7",
-    "notes": "Fixed database persistence so tasks correctly save across restarts.",
-    "pub_date": "2026-03-07T00:00:00Z",
+    "version": "0.3.0",
+    "notes": "See the assets to download and install this version.",
+    "pub_date": "2026-03-08T10:08:41Z",
     "platforms": {
         "darwin-aarch64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSVXBPMTQwbUlYNS9YZTlFbTFJN1gvRUpYbmRKNzN3eW4vbHRLS1Z2V1hDZFQweUFqRmNXTE0zR1pONVhMNXlWWUFtYW0rWENCLzl4TWV5KzF4T0dCaU9lMVlGbWIrN0E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyODcxNzY5CWZpbGU6T21UZURvZW4uYXBwLnRhci5negphTG5qd0pXWWYyOE41b2g5d0UwMzVyZDdjMGt4ZXBpYjBQTzNWbFpYVVFNbWJrcUJjT2ttV2E0b0dQeWp0M0lSY2RQcGYvMVJZTjUwQTVKVEZoSS9BQT09Cg==",
-            "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.2.7/OmTeDoen.app.tar.gz"
+            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUldRSkFLdEdHYlhzWEQ2cTdCQ1dDTGdraVFlTlk3YlZ2WHg1alNuN1RzV2c5aE9MbHM4eGZCRnlDVUppdTJxZXhQaHlleTRrMDI2b2FyaEdVOFhLc0ZiS29IUWxiVWlkUGdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyOTY0NDM3CWZpbGU6T21UZURvZW4uYXBwLnRhci5negovVGozOWRCbjdxbFBEV1lXaXBDdmNiMlBQdElkeG1zVE4rZkxxdWtMV2k3TWs5RnJER1ZyZU1KeU9sL1VHb2Y2a284Z2xrNVhSd2F1VTJhRDJONU5EUT09Cg==",
+            "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.3.0/OmTeDoen.app.tar.gz"
         }
     }
 }
