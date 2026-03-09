@@ -3,6 +3,12 @@
 	import { isFocusMode } from "$lib/stores/app.svelte.js";
 	import { todayISO, addDays } from "$lib/utils/dates.js";
 
+	interface Props {
+		onToggleFocus?: () => void;
+	}
+
+	let { onToggleFocus }: Props = $props();
+
 	let focusMode = $derived(isFocusMode());
 
 	// Calculate the 3 days
@@ -19,7 +25,7 @@
 			<DayColumn date={yesterdayStr} />
 		</div>
 		<div class="focus-col focus-col-today">
-			<DayColumn date={todayStr} />
+			<DayColumn date={todayStr} {onToggleFocus} />
 		</div>
 		<div class="focus-col focus-col-tomorrow">
 			<DayColumn date={tomorrowStr} />

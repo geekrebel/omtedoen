@@ -70,11 +70,62 @@
 		}
 	}
 
-	function handleToggleFocusMode() {
+	let savedWindowSize: { width: number; height: number } | null = null;
+
+	async function handleToggleFocusMode() {
 		toggleFocusMode();
 		saveSetting("focusMode", String(isFocusMode()));
 		if (isFocusMode()) {
 			sidebarExpanded = false;
+			// Resize window to narrow focus width
+			if (typeof window !== "undefined" && "__TAURI__" in window) {
+				try {
+					const { getCurrentWindow } = await import(
+						"@tauri-apps/api/window"
+					);
+					const win = getCurrentWindow();
+					const size = await win.innerSize();
+					savedWindowSize = {
+						width: size.width,
+						height: size.height,
+					};
+					await win.setMinSize({
+						type: "Logical",
+						width: 380,
+						height: 500,
+					});
+					await win.setSize({
+						type: "Logical",
+						width: 480,
+						height: size.height / (window.devicePixelRatio || 1),
+					});
+				} catch {}
+			}
+		} else {
+			// Restore previous window size
+			if (
+				savedWindowSize &&
+				typeof window !== "undefined" &&
+				"__TAURI__" in window
+			) {
+				try {
+					const { getCurrentWindow } = await import(
+						"@tauri-apps/api/window"
+					);
+					const win = getCurrentWindow();
+					await win.setMinSize({
+						type: "Logical",
+						width: 700,
+						height: 500,
+					});
+					await win.setSize({
+						type: "Physical",
+						width: savedWindowSize.width,
+						height: savedWindowSize.height,
+					});
+					savedWindowSize = null;
+				} catch {}
+			}
 		}
 	}
 
@@ -246,26 +297,8 @@
 				</div>
 			{/if}
 
-			<div class="main-toolbar">
-				<button
-					class="focus-mode-btn"
-					class:active={focusMode}
-					onclick={handleToggleFocusMode}
-					aria-label="Toggle Focus Mode"
-					title="Click the bolt on each task to mark it for focus, then toggle this to show only those tasks"
-				>
-					<svg class="focus-icon" viewBox="0 0 16 16" fill="none">
-						<path
-							d="M8.5 1L3 9.5h4.5L6.5 15l6-8.5H8L8.5 1z"
-							fill="currentColor"
-						/>
-					</svg>
-					<span>Focus</span>
-				</button>
-			</div>
-
 			{#if view === "focus"}
-				<FocusView />
+				<FocusView onToggleFocus={handleToggleFocusMode} />
 				{#if parkedTasks.length > 0}
 					<div class="focus-parking">
 						<ParkingLot />

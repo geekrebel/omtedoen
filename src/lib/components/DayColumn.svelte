@@ -15,9 +15,10 @@
 	interface Props {
 		date: string;
 		compact?: boolean;
+		onToggleFocus?: () => void;
 	}
 
-	let { date, compact = false }: Props = $props();
+	let { date, compact = false, onToggleFocus }: Props = $props();
 
 	let allTasks = $derived(getTasksForDate(date));
 	let focusModeActive = $derived(isFocusMode());
@@ -68,6 +69,22 @@
 <div class="day-column" class:today class:past class:compact>
 	<div class="day-header">
 		<h3 class="day-label">{label}</h3>
+		{#if onToggleFocus}
+			<button
+				class="focus-toggle-btn"
+				class:active={focusModeActive}
+				onclick={onToggleFocus}
+				aria-label="Toggle Focus Mode"
+				title="Toggle focus mode"
+			>
+				<svg viewBox="0 0 16 16" fill="none" class="focus-toggle-icon">
+					<path
+						d="M8.5 1L3 9.5h4.5L6.5 15l6-8.5H8L8.5 1z"
+						fill="currentColor"
+					/>
+				</svg>
+			</button>
+		{/if}
 		{#if tasks.length > 0}
 			<span class="task-count"
 				>{tasks.filter((t) => !t.isCompleted).length}</span
@@ -119,7 +136,6 @@
 	.day-header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		gap: 8px;
 		padding: 4px 8px 16px;
 		border-bottom: 1px solid var(--border-light);
@@ -132,11 +148,47 @@
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		color: var(--text-secondary);
+		flex: 1;
 	}
 
 	.today .day-label {
 		color: var(--heading-green);
 		text-shadow: 0 0 12px rgba(45, 106, 79, 0.25);
+	}
+
+	.focus-toggle-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 8px;
+		color: var(--text-muted);
+		background: rgba(0, 0, 0, 0.04);
+		border: 1px solid var(--border-light);
+		transition: all 0.2s ease;
+	}
+
+	.focus-toggle-btn:hover {
+		color: #eab308;
+		background: rgba(234, 179, 8, 0.1);
+		border-color: rgba(234, 179, 8, 0.3);
+	}
+
+	.focus-toggle-btn.active {
+		color: #fff;
+		background: #eab308;
+		border-color: #d4a017;
+		box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3);
+	}
+
+	.focus-toggle-btn.active:hover {
+		background: #d4a017;
+	}
+
+	.focus-toggle-icon {
+		width: 14px;
+		height: 14px;
 	}
 
 	.task-count {

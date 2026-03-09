@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "OmTeDoen",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "identifier": "com.omtedoen.todo",
   "build": {
     "frontendDist": "../build",
@@ -15,7 +15,7 @@
         "title": "OmTeDoen",
         "width": 1100,
         "height": 700,
-        "minWidth": 700,
+        "minWidth": 380,
         "minHeight": 500,
         "resizable": true,
         "fullscreen": false
