@@ -1,5 +1,6 @@
 <script lang="ts">
 	import DayColumn from "./DayColumn.svelte";
+	import PersistentQuickAdd from "./PersistentQuickAdd.svelte";
 	import { isFocusMode, checkDateChange } from "$lib/stores/app.svelte.js";
 	import { addDays, todayISO } from "$lib/utils/dates.js";
 
@@ -15,6 +16,8 @@
 	// update — module-level $state + setInterval can silently go stale
 	// when the OS suspends/resumes the Tauri webview process.
 	let todayStr = $state(todayISO());
+
+	let quickAddComponent: any = $state(null);
 
 	$effect(() => {
 		const refresh = () => {
@@ -46,18 +49,25 @@
 
 	let yesterdayStr = $derived(addDays(todayStr, -1));
 	let tomorrowStr = $derived(addDays(todayStr, 1));
+
+	function handleTaskHoverChange(isHovered: boolean) {
+		if (quickAddComponent) {
+			quickAddComponent.notifyTaskHovered(isHovered);
+		}
+	}
 </script>
 
 <div class="focus-view">
+	<PersistentQuickAdd bind:this={quickAddComponent} />
 	<div class="focus-columns glass-panel">
 		<div class="focus-col focus-col-yesterday">
-			<DayColumn date={yesterdayStr} />
+			<DayColumn date={yesterdayStr} onTaskHoverChange={handleTaskHoverChange} />
 		</div>
 		<div class="focus-col focus-col-today">
-			<DayColumn date={todayStr} {onToggleFocus} />
+			<DayColumn date={todayStr} {onToggleFocus} onTaskHoverChange={handleTaskHoverChange} />
 		</div>
 		<div class="focus-col focus-col-tomorrow">
-			<DayColumn date={tomorrowStr} />
+			<DayColumn date={tomorrowStr} onTaskHoverChange={handleTaskHoverChange} />
 		</div>
 	</div>
 </div>
@@ -67,17 +77,18 @@
 		display: flex;
 		flex-direction: column;
 		min-height: 0;
-		padding: 32px 24px 48px;
+		padding: 0;
 		max-width: 1200px;
 		margin: 0 auto;
+		width: 100%;
 	}
 
 	.focus-columns {
 		display: flex;
 		flex: 1;
-		border-radius: 24px;
 		overflow: visible;
 		background: var(--bg-surface);
+		padding: 32px 24px 48px;
 	}
 
 	.focus-col {

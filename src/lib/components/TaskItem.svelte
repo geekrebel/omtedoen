@@ -15,9 +15,10 @@
 
 	interface Props {
 		task: Task;
+		onTaskHoverChange?: (isHovered: boolean) => void;
 	}
 
-	let { task }: Props = $props();
+	let { task, onTaskHoverChange }: Props = $props();
 
 	let editing = $state(false);
 	let editValue = $state("");
@@ -178,8 +179,14 @@
 	class:animate-to-someday={animateToSomeday}
 	role="listitem"
 	tabindex="0"
-	onmouseenter={() => (isHovered = true)}
-	onmouseleave={() => (isHovered = false)}
+	onmouseenter={() => {
+		isHovered = true;
+		onTaskHoverChange?.(true);
+	}}
+	onmouseleave={() => {
+		isHovered = false;
+		onTaskHoverChange?.(false);
+	}}
 >
 	<button
 		data-no-dnd="true"

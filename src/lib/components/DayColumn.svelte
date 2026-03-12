@@ -17,9 +17,10 @@
 		date: string;
 		compact?: boolean;
 		onToggleFocus?: () => void;
+		onTaskHoverChange?: (isHovered: boolean) => void;
 	}
 
-	let { date, compact = false, onToggleFocus }: Props = $props();
+	let { date, compact = false, onToggleFocus, onTaskHoverChange }: Props = $props();
 
 	let allTasks = $derived(getTasksForDate(date));
 	let focusModeActive = $derived(isFocusMode());
@@ -104,7 +105,7 @@
 		onfinalize={handleDndFinalize}
 	>
 		{#each dndItems as task (task.id)}
-			<TaskItem {task} />
+			<TaskItem {task} {onTaskHoverChange} />
 		{/each}
 	</div>
 
