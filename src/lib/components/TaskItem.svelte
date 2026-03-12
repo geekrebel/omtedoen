@@ -7,8 +7,11 @@
 		deleteTask,
 		moveTask,
 		getDefaultSomedayId,
+		getToday,
+		getTodayTasks,
 	} from "$lib/stores/app.svelte.js";
 	import { addDays } from "$lib/utils/dates.js";
+	import { sortOrderBetween } from "$lib/core/task-engine.js";
 
 	interface Props {
 		task: Task;
@@ -115,6 +118,9 @@
 		} else if (e.key === "s" || e.key === "S") {
 			e.preventDefault();
 			moveToSomeday();
+		} else if (e.key === "b" || e.key === "B") {
+			e.preventDefault();
+			moveToToday();
 		} else if (e.key === "Delete" || e.key === "Backspace") {
 			e.preventDefault();
 			handleDelete();
@@ -133,6 +139,16 @@
 			moveTask(task.id, null, getDefaultSomedayId(), task.sortOrder);
 			animateToSomeday = false;
 		}, 500);
+	}
+
+	function moveToToday() {
+		if (task.listId) {
+			const todayTasks = getTodayTasks();
+			const topSortOrder = todayTasks.length > 0
+				? sortOrderBetween(null, Math.min(...todayTasks.map((t) => t.sortOrder)))
+				: 1;
+			moveTask(task.id, getToday(), null, topSortOrder);
+		}
 	}
 
 	function toggleStep(stepIdx: number) {

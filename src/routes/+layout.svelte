@@ -230,7 +230,7 @@
 					class:active={view === "someday"}
 					onclick={() => setCurrentView("someday")}
 				>
-					<span class="nav-icon">&#x2606;</span>
+					<span class="nav-icon">&#x1F6D3;</span>
 					<span class="nav-label">Someday</span>
 					<kbd class="nav-kbd">3</kbd>
 				</button>
