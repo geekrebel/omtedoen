@@ -16,15 +16,23 @@
 
 	let tasks = $derived(getTasksForList(list.id));
 	let collapsed = $state(false);
+	let confirmingDelete = $state(false);
 
 	function handleAdd(title: string) {
 		addTask(title, null, list.id, { skipDateParsing: true });
 	}
 
 	function handleDelete() {
-		if (confirm(`Delete "${list.name}" and all its tasks?`)) {
-			deleteList(list.id);
-		}
+		confirmingDelete = true;
+	}
+
+	function confirmDelete() {
+		deleteList(list.id);
+		confirmingDelete = false;
+	}
+
+	function cancelDelete() {
+		confirmingDelete = false;
 	}
 </script>
 
@@ -37,11 +45,21 @@
 		<span class="list-count"
 			>{tasks.filter((t) => !t.isCompleted).length}</span
 		>
-		<button
-			class="delete-list-btn"
-			onclick={handleDelete}
-			aria-label="Delete list">&times;</button
-		>
+		{#if !list.isDefault}
+			{#if confirmingDelete}
+				<span class="confirm-delete">
+					<span class="confirm-text">Delete?</span>
+					<button class="confirm-yes" onclick={confirmDelete}>Yes</button>
+					<button class="confirm-no" onclick={cancelDelete}>No</button>
+				</span>
+			{:else}
+				<button
+					class="delete-list-btn"
+					onclick={handleDelete}
+					aria-label="Delete list">&times;</button
+				>
+			{/if}
+		{/if}
 	</div>
 
 	{#if !collapsed}
@@ -149,6 +167,52 @@
 	.delete-list-btn:hover {
 		color: var(--priority-must);
 		background: rgba(255, 71, 110, 0.1);
+	}
+
+	.confirm-delete {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		animation: fadeIn 0.15s ease-out;
+	}
+
+	.confirm-text {
+		font-size: 13px;
+		font-weight: 600;
+		color: var(--priority-must);
+	}
+
+	.confirm-yes,
+	.confirm-no {
+		font-size: 12px;
+		font-weight: 600;
+		padding: 2px 10px;
+		border-radius: 6px;
+		transition: all var(--transition-fast);
+	}
+
+	.confirm-yes {
+		color: #fff;
+		background: var(--priority-must);
+	}
+
+	.confirm-yes:hover {
+		filter: brightness(1.1);
+	}
+
+	.confirm-no {
+		color: var(--text-secondary);
+		background: var(--bg-hover);
+		border: 1px solid var(--border);
+	}
+
+	.confirm-no:hover {
+		background: var(--border);
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; }
+		to { opacity: 1; }
 	}
 
 	.list-tasks {

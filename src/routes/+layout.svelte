@@ -1,6 +1,6 @@
 <script lang="ts">
 	import "../app.css";
-	import { onMount } from "svelte";
+	import { onMount, tick } from "svelte";
 	import type { Snippet } from "svelte";
 	import { createStore } from "$lib/storage/index.js";
 	import {
@@ -43,6 +43,9 @@
 		const { store, type } = await createStore();
 		await initStore(store, type);
 		ready = true;
+
+		// Wait for Svelte to mount components now that ready=true
+		await tick();
 
 		// Show startup tip
 		if (showStartupTip && tipComponent) {
