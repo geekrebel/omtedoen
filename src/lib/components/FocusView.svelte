@@ -1,7 +1,7 @@
 <script lang="ts">
 	import DayColumn from "./DayColumn.svelte";
-	import { isFocusMode, getToday } from "$lib/stores/app.svelte.js";
-	import { addDays } from "$lib/utils/dates.js";
+	import { isFocusMode, checkDateChange } from "$lib/stores/app.svelte.js";
+	import { addDays, todayISO } from "$lib/utils/dates.js";
 
 	interface Props {
 		onToggleFocus?: () => void;
@@ -11,12 +11,41 @@
 
 	let focusMode = $derived(isFocusMode());
 
-	// Calculate the 3 days
-	let todayStr = $derived(getToday());
+	// Own the "today" date at the component level so it's guaranteed to
+	// update — module-level $state + setInterval can silently go stale
+	// when the OS suspends/resumes the Tauri webview process.
+	let todayStr = $state(todayISO());
+
+	$effect(() => {
+		const refresh = () => {
+			const now = todayISO();
+			if (now !== todayStr) {
+				todayStr = now;
+				// Also sync the store's reactive today + run rollover
+				checkDateChange();
+			}
+		};
+
+		const interval = setInterval(refresh, 10_000);
+
+		const onVisible = () => {
+			if (document.visibilityState === "visible") refresh();
+		};
+		document.addEventListener("visibilitychange", onVisible);
+		window.addEventListener("focus", refresh);
+
+		// Check immediately in case we mounted after a date change
+		refresh();
+
+		return () => {
+			clearInterval(interval);
+			document.removeEventListener("visibilitychange", onVisible);
+			window.removeEventListener("focus", refresh);
+		};
+	});
+
 	let yesterdayStr = $derived(addDays(todayStr, -1));
 	let tomorrowStr = $derived(addDays(todayStr, 1));
-
-	let displayDays = $derived([yesterdayStr, todayStr, tomorrowStr]);
 </script>
 
 <div class="focus-view">

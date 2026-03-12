@@ -29,7 +29,7 @@ let monthOffset: number = $state(0); // 0 = current month, -1 = last month, etc.
 // Reactive "today" that updates when the calendar date changes
 let today: string = $state(todayISO());
 
-function checkDateChange() {
+export function checkDateChange() {
 	const now = todayISO();
 	if (now !== today) {
 		today = now;
@@ -38,9 +38,9 @@ function checkDateChange() {
 	}
 }
 
-// Check every 30 seconds and on window focus/visibility
+// Backup: module-level interval (may not reliably trigger reactivity in all environments)
 if (typeof window !== 'undefined') {
-	setInterval(checkDateChange, 30_000);
+	setInterval(checkDateChange, 10_000);
 	document.addEventListener('visibilitychange', () => {
 		if (document.visibilityState === 'visible') checkDateChange();
 	});
@@ -213,6 +213,9 @@ export async function addTask(
 	options?: { skipDateParsing?: boolean }
 ): Promise<Task> {
 	if (!store) throw new Error('Store not initialized');
+
+	// Ensure today is up-to-date before adding task
+	checkDateChange();
 
 	// Stage 1: Extract recurrence ("every monday", "daily", etc.)
 	const { title: afterRecurrence, rule, ruleText } = extractRecurrence(title);

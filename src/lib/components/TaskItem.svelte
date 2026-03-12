@@ -5,7 +5,9 @@
 		toggleTask,
 		updateTask,
 		deleteTask,
+		moveTask,
 	} from "$lib/stores/app.svelte.js";
+	import { addDays } from "$lib/utils/dates.js";
 
 	interface Props {
 		task: Task;
@@ -19,6 +21,7 @@
 	let showSteps = $state(false);
 	let justCompleted = $state(false);
 	let isHovered = $state(false);
+	let animateToSomeday = $state(false);
 
 	const colorLabelValues: Record<ColorLabel, string> = {
 		none: "transparent",
@@ -105,10 +108,30 @@
 		} else if (e.key === "5") {
 			e.preventDefault();
 			toggleFocused();
+		} else if (e.key === "t" || e.key === "T") {
+			e.preventDefault();
+			moveToTomorrow();
+		} else if (e.key === "s" || e.key === "S") {
+			e.preventDefault();
+			moveToSomeday();
 		} else if (e.key === "Delete" || e.key === "Backspace") {
 			e.preventDefault();
 			handleDelete();
 		}
+	}
+
+	function moveToTomorrow() {
+		if (!task.dateTarget) return;
+		const tomorrow = addDays(task.dateTarget, 1);
+		moveTask(task.id, tomorrow, null, task.sortOrder);
+	}
+
+	function moveToSomeday() {
+		animateToSomeday = true;
+		setTimeout(() => {
+			moveTask(task.id, null, null, task.sortOrder);
+			animateToSomeday = false;
+		}, 500);
 	}
 
 	function toggleStep(stepIdx: number) {
@@ -135,6 +158,7 @@
 	class:completed={task.isCompleted}
 	class:celebrate={justCompleted}
 	class:parked={task.parked}
+	class:animate-to-someday={animateToSomeday}
 	role="listitem"
 	tabindex="0"
 	onmouseenter={() => (isHovered = true)}
@@ -180,6 +204,14 @@
 			class="color-label"
 			style="background: {colorLabelValues[task.colorLabel]}"
 		></span>
+	{/if}
+
+	{#if task.listId}
+		<span
+			data-no-dnd="true"
+			class="bucket-icon"
+			title="In Someday list"
+		>🪣</span>
 	{/if}
 
 	{#if editing}
@@ -486,5 +518,38 @@
 
 	.step-done {
 		opacity: 0.5;
+	}
+
+	/* Bucket icon for Someday items */
+	.bucket-icon {
+		flex-shrink: 0;
+		font-size: 14px;
+		opacity: 0.7;
+		transition: all var(--transition-fast);
+	}
+
+	.bucket-icon:hover {
+		opacity: 1;
+		filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.2));
+	}
+
+	/* Animation when moving to Someday */
+	.task-item.animate-to-someday {
+		animation: swishToSomeday 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+	}
+
+	@keyframes swishToSomeday {
+		0% {
+			opacity: 1;
+			transform: translateY(0) translateX(0) scale(1);
+		}
+		70% {
+			opacity: 0.5;
+			transform: translateY(20px) translateX(-30px) scale(0.95);
+		}
+		100% {
+			opacity: 0;
+			transform: translateY(40px) translateX(-50px) scale(0.8);
+		}
 	}
 </style>

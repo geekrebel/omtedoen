@@ -21,6 +21,7 @@
 	import ParkingLot from "$lib/components/ParkingLot.svelte";
 	import CommandPalette from "$lib/components/CommandPalette.svelte";
 	import QuickCapture from "$lib/components/QuickCapture.svelte";
+	import StartupTip from "$lib/components/StartupTip.svelte";
 
 	let { children }: { children: Snippet } = $props();
 
@@ -30,6 +31,8 @@
 	let sidebarExpanded = $state(false);
 	let updateAvailable = $state<{ version: string } | null>(null);
 	let updateInstalling = $state(false);
+	let tipComponent: any = $state(null);
+	let showStartupTip = $state(true);
 
 	let view = $derived(getCurrentView());
 	let focusMode = $derived(isFocusMode());
@@ -40,6 +43,11 @@
 		const { store, type } = await createStore();
 		await initStore(store, type);
 		ready = true;
+
+		// Show startup tip
+		if (showStartupTip && tipComponent) {
+			tipComponent.showTip();
+		}
 
 		// Silent update check on startup
 		if (typeof window !== "undefined" && "__TAURI__" in window) {
@@ -308,6 +316,7 @@
 
 	<CommandPalette open={paletteOpen} onclose={() => (paletteOpen = false)} />
 	<QuickCapture open={captureOpen} onclose={() => (captureOpen = false)} />
+	<StartupTip bind:this={tipComponent} />
 {/if}
 
 {@render children()}
