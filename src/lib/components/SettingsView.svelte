@@ -7,6 +7,7 @@
 		exportData,
 		getStoreType,
 	} from "$lib/stores/app.svelte.js";
+	import { version } from "../../../package.json";
 
 	let focusModeActive = $derived(isFocusMode());
 	let storageType = $derived(getStoreType());
@@ -247,7 +248,7 @@
 	<section class="setting-group">
 		<h2>About</h2>
 		<p class="about-text">
-			<strong>OmTeDoen</strong> v0.4.1<br />
+			<strong>OmTeDoen</strong> v{version}<br />
 			A simple, ADHD-friendly todo app.<br />
 			Built with Svelte + Tauri.
 		</p>
