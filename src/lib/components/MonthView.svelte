@@ -95,7 +95,7 @@
             closePopover();
         }
         if (e.key === "Enter" && newTaskValue.trim()) {
-            addTask(newTaskValue.trim(), selectedDate);
+            addTask(newTaskValue.trim(), selectedDate, null, { skipDateParsing: true });
             newTaskValue = "";
         }
     }

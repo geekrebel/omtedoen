@@ -217,14 +217,21 @@ export async function addTask(
 	// Ensure today is up-to-date before adding task
 	checkDateChange();
 
-	// Stage 1: Extract recurrence ("every monday", "daily", etc.)
-	const { title: afterRecurrence, rule, ruleText } = extractRecurrence(title);
-
-	// Stage 2: Extract one-off date ("tomorrow", "next friday", "March 15", etc.)
-	let cleanTitle = afterRecurrence;
+	// NLP stages: only run when explicitly enabled (e.g. Quick Capture)
+	let cleanTitle = title;
 	let effectiveDate = dateTarget;
+	let rule: ReturnType<typeof extractRecurrence>['rule'] = null;
+	let ruleText: string | null = null;
+
 	if (!options?.skipDateParsing) {
-		const { title: afterDate, parsedDate } = extractDateTarget(afterRecurrence);
+		// Stage 1: Extract recurrence ("every monday", "daily", etc.)
+		const recResult = extractRecurrence(title);
+		cleanTitle = recResult.title;
+		rule = recResult.rule;
+		ruleText = recResult.ruleText;
+
+		// Stage 2: Extract one-off date ("tomorrow", "next friday", "March 15", etc.)
+		const { title: afterDate, parsedDate } = extractDateTarget(cleanTitle);
 		cleanTitle = afterDate;
 		if (parsedDate) {
 			effectiveDate = parsedDate;

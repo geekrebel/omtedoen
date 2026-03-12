@@ -43,7 +43,7 @@
 	});
 
 	function handleAdd(title: string) {
-		addTask(title, date);
+		addTask(title, date, null, { skipDateParsing: true });
 	}
 
 	function handleDndConsider(e: CustomEvent<{ items: any[] }>) {
