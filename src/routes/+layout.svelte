@@ -316,7 +316,12 @@
 
 	<CommandPalette open={paletteOpen} onclose={() => (paletteOpen = false)} />
 	<QuickCapture open={captureOpen} onclose={() => (captureOpen = false)} />
-	<StartupTip bind:this={tipComponent} />
+	<StartupTip
+		bind:this={tipComponent}
+		{updateAvailable}
+		{updateInstalling}
+		onInstallUpdate={installUpdate}
+	/>
 {/if}
 
 {@render children()}

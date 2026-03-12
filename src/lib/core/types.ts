@@ -48,6 +48,7 @@ export interface List {
 	sortOrder: number;
 	color: string | null;
 	isParkingLot: boolean;
+	isDefault: boolean;
 
 	createdAt: string;
 	updatedAt: string;
@@ -104,6 +105,7 @@ export function createList(overrides: Partial<List> & { id: string; name: string
 		sortOrder: 0,
 		color: null,
 		isParkingLot: false,
+		isDefault: false,
 		createdAt: now,
 		updatedAt: now,
 		deletedAt: null,

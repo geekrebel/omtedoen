@@ -22,6 +22,7 @@ let storeType: StoreType = $state('memory');
 let allTasks: Task[] = $state([]);
 let allLists: List[] = $state([]);
 let parkingLotId: string = $state('');
+let defaultSomedayId: string = $state('');
 let currentView: 'focus' | 'month' | 'someday' | 'settings' = $state('focus');
 let focusMode: boolean = $state(false);
 let monthOffset: number = $state(0); // 0 = current month, -1 = last month, etc.
@@ -119,6 +120,10 @@ export function getParkingLotList(): List | undefined {
 	return allLists.find((l) => l.isParkingLot && !l.deletedAt);
 }
 
+export function getDefaultSomedayId(): string {
+	return defaultSomedayId;
+}
+
 export function getAllTasks(): Task[] {
 	return allTasks;
 }
@@ -177,6 +182,20 @@ export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
 		allLists = [...allLists, parkingLot];
 	}
 	parkingLotId = parkingLot.id;
+
+	// Ensure default someday list exists
+	let defaultSomeday = allLists.find((l) => l.isDefault && !l.isParkingLot);
+	if (!defaultSomeday) {
+		defaultSomeday = createList({
+			id: newId(),
+			name: 'Someday',
+			isDefault: true,
+			sortOrder: 0
+		});
+		await store.upsertList(defaultSomeday);
+		allLists = [...allLists, defaultSomeday];
+	}
+	defaultSomedayId = defaultSomeday.id;
 
 	// Run daily rollover
 	const todayDate = todayISO();

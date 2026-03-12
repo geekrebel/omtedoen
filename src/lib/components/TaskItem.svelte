@@ -6,6 +6,7 @@
 		updateTask,
 		deleteTask,
 		moveTask,
+		getDefaultSomedayId,
 	} from "$lib/stores/app.svelte.js";
 	import { addDays } from "$lib/utils/dates.js";
 
@@ -129,7 +130,7 @@
 	function moveToSomeday() {
 		animateToSomeday = true;
 		setTimeout(() => {
-			moveTask(task.id, null, null, task.sortOrder);
+			moveTask(task.id, null, getDefaultSomedayId(), task.sortOrder);
 			animateToSomeday = false;
 		}, 500);
 	}
@@ -211,7 +212,13 @@
 			data-no-dnd="true"
 			class="bucket-icon"
 			title="In Someday list"
-		>🪣</span>
+		>
+			<svg viewBox="0 0 16 16" fill="none" class="bucket-svg">
+				<path d="M3 5h10l-1 9H4L3 5z" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+				<path d="M2 4h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+				<path d="M6 4V3a2 2 0 0 1 4 0v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+			</svg>
+		</span>
 	{/if}
 
 	{#if editing}
@@ -523,14 +530,21 @@
 	/* Bucket icon for Someday items */
 	.bucket-icon {
 		flex-shrink: 0;
-		font-size: 14px;
+		width: 16px;
+		height: 16px;
+		color: var(--text-muted);
 		opacity: 0.7;
 		transition: all var(--transition-fast);
 	}
 
 	.bucket-icon:hover {
 		opacity: 1;
-		filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.2));
+		color: var(--accent);
+	}
+
+	.bucket-svg {
+		width: 16px;
+		height: 16px;
 	}
 
 	/* Animation when moving to Someday */

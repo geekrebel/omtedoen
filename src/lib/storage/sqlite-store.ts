@@ -39,6 +39,7 @@ interface ListRow {
 	sort_order: number;
 	color: string | null;
 	is_parking_lot: number;
+	is_default: number;
 	created_at: string;
 	updated_at: string;
 	deleted_at: string | null;
@@ -87,6 +88,7 @@ function rowToList(row: ListRow): List {
 		sortOrder: row.sort_order,
 		color: row.color,
 		isParkingLot: row.is_parking_lot === 1,
+		isDefault: row.is_default === 1,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,
 		deletedAt: row.deleted_at,
@@ -139,6 +141,7 @@ export class SqliteStore implements TodoStore {
 				sort_order REAL NOT NULL DEFAULT 0,
 				color TEXT,
 				is_parking_lot INTEGER NOT NULL DEFAULT 0,
+				is_default INTEGER NOT NULL DEFAULT 0,
 				created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f', 'now')),
 				updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%f', 'now')),
 				deleted_at TEXT,
@@ -159,6 +162,7 @@ export class SqliteStore implements TodoStore {
 		// Migration: add focused and color_label columns
 		await db.execute(`ALTER TABLE tasks ADD COLUMN focused INTEGER NOT NULL DEFAULT 0`).catch(() => {});
 		await db.execute(`ALTER TABLE tasks ADD COLUMN color_label TEXT NOT NULL DEFAULT 'none'`).catch(() => {});
+		await db.execute(`ALTER TABLE lists ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0`).catch(() => {});
 
 		await db.execute(
 			`CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date_target) WHERE deleted_at IS NULL`
@@ -298,12 +302,13 @@ export class SqliteStore implements TodoStore {
 
 	async upsertList(list: List): Promise<void> {
 		await this.db!.execute(
-			`INSERT INTO lists (id, name, sort_order, color, is_parking_lot,
+			`INSERT INTO lists (id, name, sort_order, color, is_parking_lot, is_default,
 				created_at, updated_at, deleted_at, field_timestamps, device_id)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 			ON CONFLICT(id) DO UPDATE SET
 				name=excluded.name, sort_order=excluded.sort_order,
 				color=excluded.color, is_parking_lot=excluded.is_parking_lot,
+				is_default=excluded.is_default,
 				updated_at=excluded.updated_at, deleted_at=excluded.deleted_at,
 				field_timestamps=excluded.field_timestamps, device_id=excluded.device_id`,
 			[
@@ -312,6 +317,7 @@ export class SqliteStore implements TodoStore {
 				list.sortOrder,
 				list.color,
 				list.isParkingLot ? 1 : 0,
+				list.isDefault ? 1 : 0,
 				list.createdAt,
 				list.updatedAt,
 				list.deletedAt,
