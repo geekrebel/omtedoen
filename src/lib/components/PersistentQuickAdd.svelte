@@ -6,9 +6,11 @@
 
 	interface Props {
 		onTaskHoverChange?: (isHovered: boolean) => void;
+		focusMode?: boolean;
+		onToggleFocus?: () => void;
 	}
 
-	let { onTaskHoverChange }: Props = $props();
+	let { onTaskHoverChange, focusMode = false, onToggleFocus }: Props = $props();
 
 	let value = $state("");
 	let inputEl: HTMLInputElement | undefined = $state();
@@ -85,6 +87,10 @@
 			requestAnimationFrame(() => inputEl?.focus());
 		}
 	});
+
+	function handleFocusToggle() {
+		onToggleFocus?.();
+	}
 </script>
 
 <div class="quick-add-bar">
@@ -94,11 +100,22 @@
 		onkeydown={handleKeydown}
 		onfocus={() => (isFocused = true)}
 		onblur={() => (isFocused = false)}
-		placeholder="Quick add (⌘+Shift+Space for full editor)"
+		placeholder="Add a task... (or press Q for full editor)"
 		type="text"
 		autocomplete="off"
 		class="quick-add-input"
 	/>
+
+	{#if onToggleFocus}
+		<button
+			class="focus-mode-btn"
+			class:active={focusMode}
+			onclick={handleFocusToggle}
+			title="Toggle Focus Mode (⌘⇧F)"
+		>
+			{#if focusMode}✕ Exit Focus{:else}⚡ Focus{/if}
+		</button>
+	{/if}
 
 	{#if isFocused && previewInfo}
 		<div class="quick-add-preview">
@@ -109,6 +126,9 @@
 
 <style>
 	.quick-add-bar {
+		display: flex;
+		align-items: center;
+		gap: 12px;
 		padding: 16px 24px;
 		background: var(--bg-surface);
 		border-bottom: 1px solid var(--border-light);
@@ -117,7 +137,8 @@
 	}
 
 	.quick-add-input {
-		width: 100%;
+		flex: 1;
+		min-width: 0;
 		font-size: 15px;
 		font-weight: 400;
 		color: var(--text);
@@ -150,5 +171,32 @@
 		padding: 8px 12px;
 		border-radius: 8px;
 		border: 1px solid rgba(45, 106, 79, 0.15);
+	}
+
+	/* Focus Mode Button */
+	.focus-mode-btn {
+		flex-shrink: 0;
+		padding: 6px 14px;
+		border-radius: 20px;
+		font-size: 13px;
+		font-weight: 600;
+		border: 1.5px solid var(--border);
+		color: var(--text-secondary);
+		transition: all var(--transition-fast);
+		white-space: nowrap;
+		background: transparent;
+		cursor: pointer;
+	}
+
+	.focus-mode-btn:hover {
+		border-color: var(--heading-green);
+		color: var(--heading-green);
+	}
+
+	.focus-mode-btn.active {
+		background: rgba(45, 106, 79, 0.12);
+		border-color: var(--heading-green);
+		color: var(--heading-green);
+		box-shadow: 0 0 12px rgba(45, 106, 79, 0.2);
 	}
 </style>

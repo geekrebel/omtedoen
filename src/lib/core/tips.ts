@@ -13,12 +13,6 @@ export const DEFAULT_TIPS: Tip[] = [
 		category: 'shortcuts'
 	},
 	{
-		id: 'tip-2',
-		title: 'Quick Priority',
-		message: 'Prefix your tasks with !must, !should, or !want to set priority levels automatically.',
-		category: 'features'
-	},
-	{
 		id: 'tip-3',
 		title: 'Mark for Focus',
 		message: 'Hover over a card and press "5" to toggle the lightning bolt and mark it as focused.',

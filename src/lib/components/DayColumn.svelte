@@ -1,9 +1,7 @@
 <script lang="ts">
 	import type { Task } from "$lib/core/types.js";
 	import TaskItem from "./TaskItem.svelte";
-	import TaskInput from "./TaskInput.svelte";
-	import {
-		addTask,
+		import {
 		moveTask,
 		getTasksForDate,
 		isFocusMode,
@@ -16,11 +14,10 @@
 	interface Props {
 		date: string;
 		compact?: boolean;
-		onToggleFocus?: () => void;
 		onTaskHoverChange?: (isHovered: boolean) => void;
 	}
 
-	let { date, compact = false, onToggleFocus, onTaskHoverChange }: Props = $props();
+	let { date, compact = false, onTaskHoverChange }: Props = $props();
 
 	let allTasks = $derived(getTasksForDate(date));
 	let focusModeActive = $derived(isFocusMode());
@@ -30,6 +27,7 @@
 			? allTasks.filter((t) => t.focused || t.isCompleted)
 			: allTasks,
 	);
+	let completedCount = $derived(allTasks.filter((t) => t.isCompleted).length);
 	let todayDate = $derived(getToday());
 	let label = $derived(dayLabel(date, todayDate));
 	let today = $derived(date === todayDate);
@@ -42,10 +40,6 @@
 	$effect(() => {
 		dndItems = tasks.map((t) => ({ ...t, id: t.id }));
 	});
-
-	function handleAdd(title: string) {
-		addTask(title, date, null, { skipDateParsing: true });
-	}
 
 	function handleDndConsider(e: CustomEvent<{ items: any[] }>) {
 		dndItems = e.detail.items;
@@ -72,26 +66,13 @@
 <div class="day-column" class:today class:past class:compact>
 	<div class="day-header">
 		<h3 class="day-label">{label}</h3>
-		{#if onToggleFocus}
-			<button
-				class="focus-toggle-btn"
-				class:active={focusModeActive}
-				onclick={onToggleFocus}
-				aria-label="Toggle Focus Mode"
-				title="Toggle focus mode"
-			>
-				<svg viewBox="0 0 16 16" fill="none" class="focus-toggle-icon">
-					<path
-						d="M8.5 1L3 9.5h4.5L6.5 15l6-8.5H8L8.5 1z"
-						fill="currentColor"
-					/>
-				</svg>
-			</button>
-		{/if}
-		{#if tasks.length > 0}
+		{#if tasks.filter((t) => !t.isCompleted).length > 0}
 			<span class="task-count"
 				>{tasks.filter((t) => !t.isCompleted).length}</span
 			>
+		{/if}
+		{#if completedCount > 0}
+			<span class="completed-count">{completedCount} done</span>
 		{/if}
 	</div>
 
@@ -109,10 +90,6 @@
 		{/each}
 	</div>
 
-	<TaskInput
-		placeholder={today ? "What's on today?" : "Add a task..."}
-		onsubmit={handleAdd}
-	/>
 </div>
 
 <style>
@@ -159,41 +136,6 @@
 		text-shadow: 0 0 12px rgba(45, 106, 79, 0.25);
 	}
 
-	.focus-toggle-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		height: 28px;
-		border-radius: 8px;
-		color: var(--text-muted);
-		background: rgba(0, 0, 0, 0.04);
-		border: 1px solid var(--border-light);
-		transition: all 0.2s ease;
-	}
-
-	.focus-toggle-btn:hover {
-		color: #eab308;
-		background: rgba(234, 179, 8, 0.1);
-		border-color: rgba(234, 179, 8, 0.3);
-	}
-
-	.focus-toggle-btn.active {
-		color: #fff;
-		background: #eab308;
-		border-color: #d4a017;
-		box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3);
-	}
-
-	.focus-toggle-btn.active:hover {
-		background: #d4a017;
-	}
-
-	.focus-toggle-icon {
-		width: 14px;
-		height: 14px;
-	}
-
 	.task-count {
 		font-size: 12px;
 		font-weight: 600;
@@ -202,6 +144,13 @@
 		border: 1px solid var(--border-light);
 		padding: 2px 8px;
 		border-radius: 12px;
+	}
+
+	.completed-count {
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--text-secondary);
+		opacity: 0.7;
 	}
 
 	.task-list {

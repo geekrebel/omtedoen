@@ -15,6 +15,7 @@
         addMonths,
         dayLabel,
     } from "$lib/utils/dates.js";
+    import PersistentQuickAdd from "./PersistentQuickAdd.svelte";
 
     let offset = $derived(getMonthOffset());
     let todayDate = $derived(getToday());
@@ -117,6 +118,8 @@
             >&rarr;</button
         >
     </div>
+
+    <PersistentQuickAdd />
 
     <div class="calendar-grid">
         <div class="day-headers">

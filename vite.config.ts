@@ -10,6 +10,9 @@ export default defineConfig({
 		strictPort: true,
 		watch: {
 			ignored: ['**/omtedoen.db', '**/omtedoen.db-wal', '**/omtedoen.db-shm']
+		},
+		fs: {
+			allow: ['..']
 		}
 	}
 });

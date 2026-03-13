@@ -27,6 +27,8 @@
 	let justCompleted = $state(false);
 	let isHovered = $state(false);
 	let animateToSomeday = $state(false);
+	let showMenu = $state(false);
+	let menuEl: HTMLDivElement | undefined = $state();
 
 	const colorLabelValues: Record<ColorLabel, string> = {
 		none: "transparent",
@@ -90,6 +92,21 @@
 			colorLabel: next,
 			fieldTimestamps: { ...task.fieldTimestamps, colorLabel: now },
 		});
+	}
+
+	function handleMenuClick(e: KeyboardEvent | Event) {
+		e.stopPropagation();
+		showMenu = !showMenu;
+	}
+
+	function closeMenu() {
+		showMenu = false;
+	}
+
+	function handleWindowClick(e: MouseEvent) {
+		if (showMenu && menuEl && !menuEl.contains(e.target as Node)) {
+			closeMenu();
+		}
 	}
 
 	function handleWindowKeydown(e: KeyboardEvent) {
@@ -169,7 +186,7 @@
 	let renderedTitle = $derived(renderMarkdown(task.title));
 </script>
 
-<svelte:window onkeydown={handleWindowKeydown} />
+<svelte:window onkeydown={handleWindowKeydown} onclick={handleWindowClick} />
 
 <div
 	class="task-item"
@@ -284,6 +301,62 @@
 			{stepsComplete}/{stepsTotal}
 		</button>
 	{/if}
+
+	<div class="menu-container" bind:this={menuEl}>
+		<button
+			data-no-dnd="true"
+			class="menu-btn"
+			onclick={handleMenuClick}
+			aria-label="More options"
+			title="More options"
+		>
+			&vellip;
+		</button>
+
+		{#if showMenu}
+			<div class="task-menu">
+				{#if task.dateTarget}
+					<button
+						class="menu-item"
+						onclick={() => {
+							const tomorrow = task.dateTarget ? addDays(task.dateTarget, 1) : getToday();
+							moveTask(task.id, tomorrow, null, task.sortOrder);
+							closeMenu();
+						}}
+					>
+						Move to Tomorrow
+					</button>
+				{/if}
+				<button
+					class="menu-item"
+					onclick={() => {
+						moveTask(task.id, getToday(), null, task.sortOrder);
+						closeMenu();
+					}}
+				>
+					Move to Today
+				</button>
+				<button
+					class="menu-item"
+					onclick={() => {
+						moveToSomeday();
+						closeMenu();
+					}}
+				>
+					Move to Someday
+				</button>
+				<button
+					class="menu-item delete-item"
+					onclick={() => {
+						handleDelete();
+						closeMenu();
+					}}
+				>
+					Delete
+				</button>
+			</div>
+		{/if}
+	</div>
 
 	<button
 		data-no-dnd="true"
@@ -588,5 +661,96 @@
 			opacity: 0;
 			transform: translateY(40px) translateX(-50px) scale(0.8);
 		}
+	}
+
+	/* Menu button and dropdown */
+	.menu-container {
+		flex-shrink: 0;
+		position: relative;
+	}
+
+	.menu-btn {
+		font-size: 18px;
+		color: var(--text-muted);
+		opacity: 0;
+		transform: translateX(10px);
+		transition: all var(--transition-fast);
+		flex-shrink: 0;
+		padding: 4px;
+		width: 28px;
+		height: 28px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 6px;
+		background: transparent;
+		cursor: pointer;
+	}
+
+	.task-item:hover .menu-btn {
+		opacity: 1;
+		transform: translateX(0);
+	}
+
+	.menu-btn:hover {
+		color: var(--accent);
+		background: var(--bg-hover);
+	}
+
+	.task-menu {
+		position: absolute;
+		right: 0;
+		top: 100%;
+		margin-top: 4px;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		z-index: 100;
+		min-width: 160px;
+		overflow: hidden;
+		animation: menuIn 0.15s ease-out;
+	}
+
+	@keyframes menuIn {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.menu-item {
+		display: block;
+		width: 100%;
+		padding: 10px 12px;
+		text-align: left;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--text);
+		background: transparent;
+		border: none;
+		border-bottom: 1px solid var(--border-light);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+	}
+
+	.menu-item:last-child {
+		border-bottom: none;
+	}
+
+	.menu-item:hover {
+		background: var(--bg-hover);
+	}
+
+	.menu-item.delete-item {
+		color: var(--priority-must);
+	}
+
+	.menu-item.delete-item:hover {
+		background: rgba(239, 68, 68, 0.1);
 	}
 </style>

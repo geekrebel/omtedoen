@@ -58,13 +58,17 @@
 </script>
 
 <div class="focus-view">
-	<PersistentQuickAdd bind:this={quickAddComponent} />
+	<PersistentQuickAdd
+		bind:this={quickAddComponent}
+		{focusMode}
+		onToggleFocus={onToggleFocus}
+	/>
 	<div class="focus-columns glass-panel">
 		<div class="focus-col focus-col-yesterday">
 			<DayColumn date={yesterdayStr} onTaskHoverChange={handleTaskHoverChange} />
 		</div>
 		<div class="focus-col focus-col-today">
-			<DayColumn date={todayStr} {onToggleFocus} onTaskHoverChange={handleTaskHoverChange} />
+			<DayColumn date={todayStr} onTaskHoverChange={handleTaskHoverChange} />
 		</div>
 		<div class="focus-col focus-col-tomorrow">
 			<DayColumn date={tomorrowStr} onTaskHoverChange={handleTaskHoverChange} />

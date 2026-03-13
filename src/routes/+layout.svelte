@@ -219,7 +219,16 @@
 						class:active={view === "month"}
 						onclick={() => setCurrentView("month")}
 					>
-						<span class="nav-icon">&#x2630;</span>
+						<span class="nav-icon">
+							<svg viewBox="0 0 16 16" fill="none" class="nav-svg-icon">
+								<rect x="1.5" y="3" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.4"/>
+								<path d="M1.5 7h13" stroke="currentColor" stroke-width="1.2"/>
+								<path d="M5 1.5v3M11 1.5v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+								<rect x="4" y="9.5" width="2" height="2" rx="0.5" fill="currentColor" opacity="0.7"/>
+								<rect x="7" y="9.5" width="2" height="2" rx="0.5" fill="currentColor" opacity="0.7"/>
+								<rect x="10" y="9.5" width="2" height="2" rx="0.5" fill="currentColor" opacity="0.7"/>
+							</svg>
+						</span>
 						<span class="nav-label">Month</span>
 						<kbd class="nav-kbd">2</kbd>
 					</button>
@@ -230,7 +239,12 @@
 					class:active={view === "someday"}
 					onclick={() => setCurrentView("someday")}
 				>
-					<span class="nav-icon">&#x1F6D3;</span>
+					<span class="nav-icon">
+						<svg viewBox="0 0 16 16" fill="none" class="nav-svg-icon">
+							<path d="M2 5h12l-1.5 9h-9L2 5z" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+							<path d="M1 5h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+						</svg>
+					</span>
 					<span class="nav-label">Someday</span>
 					<kbd class="nav-kbd">3</kbd>
 				</button>
@@ -270,7 +284,7 @@
 					<span class="nav-label">Quick Add</span>
 				</button>
 				<button
-					class="nav-item"
+					class="nav-item settings-item"
 					class:active={view === "settings"}
 					onclick={() => setCurrentView("settings")}
 				>
@@ -473,6 +487,16 @@
 		font-size: 16px;
 		opacity: 0.8;
 		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.nav-svg-icon {
+		width: 16px;
+		height: 16px;
+		color: currentColor;
+		vertical-align: middle;
 	}
 
 	.nav-item.active .nav-icon {
@@ -510,6 +534,11 @@
 	.nav-item:hover .nav-kbd {
 		border-color: rgba(0, 0, 0, 0.1);
 		color: var(--text-secondary);
+	}
+
+	.settings-item {
+		min-height: 44px;
+		padding: 10px 12px;
 	}
 
 	.sidebar-section {
@@ -560,63 +589,6 @@
 		overflow-y: auto;
 		position: relative;
 		z-index: 1;
-	}
-
-	.main-toolbar {
-		display: flex;
-		justify-content: flex-end;
-		padding: 12px 24px 0;
-		position: sticky;
-		top: 0;
-		z-index: 5;
-	}
-
-	.focus-mode-btn {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 8px 18px;
-		border-radius: 20px;
-		font-size: 13px;
-		font-weight: 600;
-		color: var(--text-secondary);
-		background: var(--bg-surface);
-		backdrop-filter: var(--glass);
-		-webkit-backdrop-filter: var(--glass);
-		border: 1px solid var(--border);
-		box-shadow: var(--shadow-sm);
-		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-		cursor: pointer;
-	}
-
-	.focus-mode-btn:hover {
-		transform: translateY(-1px);
-		box-shadow: var(--shadow-md);
-		border-color: #eab308;
-		color: #b45309;
-	}
-
-	.focus-mode-btn.active {
-		background: #eab308;
-		color: #fff;
-		border-color: #d4a017;
-		box-shadow: 0 4px 16px rgba(234, 179, 8, 0.3);
-	}
-
-	.focus-mode-btn.active:hover {
-		background: #d4a017;
-		border-color: #ca8a04;
-	}
-
-	.focus-icon {
-		width: 16px;
-		height: 16px;
-		color: #eab308;
-		flex-shrink: 0;
-	}
-
-	.focus-mode-btn.active .focus-icon {
-		color: #fff;
 	}
 
 	.focus-parking {
