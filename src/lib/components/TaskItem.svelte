@@ -9,6 +9,7 @@
 		getDefaultSomedayId,
 		getToday,
 		getTodayTasks,
+		setTaskColorLabel,
 	} from "$lib/stores/app.svelte.js";
 	import { addDays } from "$lib/utils/dates.js";
 	import { sortOrderBetween } from "$lib/core/task-engine.js";
@@ -85,13 +86,7 @@
 	}
 
 	function setColorLabel(label: ColorLabel) {
-		const next = task.colorLabel === label ? "none" : label;
-		const now = new Date().toISOString();
-		updateTask({
-			...task,
-			colorLabel: next,
-			fieldTimestamps: { ...task.fieldTimestamps, colorLabel: now },
-		});
+		setTaskColorLabel(task.id, label);
 	}
 
 	function handleMenuClick(e: KeyboardEvent | Event) {

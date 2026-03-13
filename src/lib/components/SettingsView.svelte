@@ -2,6 +2,8 @@
 	import {
 		isFocusMode,
 		toggleFocusMode,
+		isAutoSortByColor,
+		toggleAutoSortByColor,
 		doFreshStart,
 		saveSetting,
 		exportData,
@@ -10,6 +12,7 @@
 	import { version } from "../../../package.json";
 
 	let focusModeActive = $derived(isFocusMode());
+	let autoSortActive = $derived(isAutoSortByColor());
 	let storageType = $derived(getStoreType());
 	let freshStartConfirm = $state(false);
 	let freshStartResult = $state<number | null>(null);
@@ -116,6 +119,26 @@
 				role="switch"
 				aria-checked={focusModeActive}
 				aria-label="Toggle Focus Mode"
+			>
+				<span class="toggle-knob"></span>
+			</button>
+		</div>
+
+		<div class="setting-row">
+			<div class="setting-info">
+				<span class="setting-label">Auto-sort by priority</span>
+				<span class="setting-desc">When you apply a color label, the task moves to the top of its priority group. Red first, then amber, then teal.</span>
+			</div>
+			<button
+				class="toggle-btn"
+				class:active={autoSortActive}
+				onclick={() => {
+					toggleAutoSortByColor();
+					saveSetting("autoSortByColor", String(isAutoSortByColor()));
+				}}
+				role="switch"
+				aria-checked={autoSortActive}
+				aria-label="Toggle auto-sort by priority"
 			>
 				<span class="toggle-knob"></span>
 			</button>

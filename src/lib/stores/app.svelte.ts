@@ -1,6 +1,6 @@
 import type { TodoStore } from '$lib/storage/store.js';
 import type { StoreType } from '$lib/storage/index.js';
-import type { Task, List } from '$lib/core/types.js';
+import type { Task, List, ColorLabel } from '$lib/core/types.js';
 import { createTask, createList } from '$lib/core/types.js';
 import { newId } from '$lib/core/ids.js';
 import { todayISO } from '$lib/utils/dates.js';
@@ -25,6 +25,7 @@ let parkingLotId: string = $state('');
 let defaultSomedayId: string = $state('');
 let currentView: 'focus' | 'month' | 'someday' | 'settings' = $state('focus');
 let focusMode: boolean = $state(false);
+let autoSortByColor: boolean = $state(true);
 let monthOffset: number = $state(0); // 0 = current month, -1 = last month, etc.
 
 // Reactive "today" that updates when the calendar date changes
@@ -152,6 +153,14 @@ export function toggleFocusMode() {
 	focusMode = !focusMode;
 }
 
+export function isAutoSortByColor(): boolean {
+	return autoSortByColor;
+}
+
+export function toggleAutoSortByColor() {
+	autoSortByColor = !autoSortByColor;
+}
+
 export function getMonthOffset(): number {
 	return monthOffset;
 }
@@ -221,6 +230,9 @@ export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
 	// Load settings
 	const fm = await store.getSetting('focusMode');
 	focusMode = fm === 'true';
+
+	const asbc = await store.getSetting('autoSortByColor');
+	autoSortByColor = asbc !== 'false'; // default true
 }
 
 // Actions
@@ -433,6 +445,62 @@ export async function doFreshStart(): Promise<number> {
 	await store.upsertTasks(archived);
 	allTasks = allTasks.filter((t) => t.isCompleted || t.deletedAt);
 	return archived.length;
+}
+
+// Color auto-sort helpers
+function colorPriority(color: ColorLabel): number {
+	return { red: 1, amber: 2, teal: 3, none: 99 }[color] ?? 99;
+}
+
+function targetSortOrderForColor(tasks: Task[], colorLabel: ColorLabel): number {
+	// tasks = all incomplete tasks in scope, EXCLUDING the task being moved
+	const priority = colorPriority(colorLabel);
+
+	// Insert before: first same-color task, OR first lower-priority task if no same-color
+	const insertBefore = tasks.find((t) => t.colorLabel === colorLabel)
+		?? tasks.find((t) => colorPriority(t.colorLabel) >= priority);
+
+	if (insertBefore) {
+		const idx = tasks.indexOf(insertBefore);
+		return sortOrderBetween(idx > 0 ? tasks[idx - 1].sortOrder : null, insertBefore.sortOrder);
+	}
+
+	// No tasks of same or lower priority exist, append to end
+	return sortOrderBetween(tasks.at(-1)?.sortOrder ?? null, null);
+}
+
+export function setTaskColorLabel(taskId: string, colorLabel: ColorLabel): void {
+	if (!store) throw new Error('Store not initialized');
+
+	const task = allTasks.find((t) => t.id === taskId);
+	if (!task) return;
+
+	// Toggle: same color twice = remove (set to none)
+	const next: ColorLabel = task.colorLabel === colorLabel ? 'none' : colorLabel;
+
+	const now = new Date().toISOString();
+	const updated: Task = {
+		...task,
+		colorLabel: next,
+		fieldTimestamps: { ...task.fieldTimestamps, colorLabel: now }
+	};
+
+	// Auto-sort: update sortOrder when assigning a color (not when removing)
+	if (autoSortByColor && next !== 'none') {
+		// Get all incomplete tasks in the same scope, EXCLUDING this task
+		const scopedTasks = (task.dateTarget
+			? allTasks.filter(
+				(t) => t.dateTarget === task.dateTarget && !t.deletedAt && !t.parked && !t.isCompleted && t.id !== taskId
+			)
+			: allTasks.filter(
+				(t) => t.listId === task.listId && !t.deletedAt && !t.isCompleted && t.id !== taskId
+			)
+		).sort((a, b) => a.sortOrder - b.sortOrder);
+
+		updated.sortOrder = targetSortOrderForColor(scopedTasks, next);
+	}
+
+	updateTask(updated);
 }
 
 // Settings
