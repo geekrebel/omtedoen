@@ -6,6 +6,7 @@
 		addTask,
 		getTasksForList,
 		deleteList,
+		sortListTasksByColor,
 	} from "$lib/stores/app.svelte.js";
 
 	interface Props {
@@ -45,6 +46,19 @@
 		<span class="list-count"
 			>{tasks.filter((t) => !t.isCompleted).length}</span
 		>
+		<button
+			class="sort-by-color-btn"
+			onclick={() => sortListTasksByColor(list.id)}
+			aria-label="Sort by color priority"
+			title="Sort by color"
+		>
+			<svg width="14" height="14" viewBox="0 0 14 14">
+				<line x1="2" y1="3" x2="9" y2="3" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+				<line x1="2" y1="7" x2="9" y2="7" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+				<line x1="2" y1="11" x2="9" y2="11" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+				<polyline points="11,5 12.5,8 11,8 11,12" fill="none" stroke="var(--text-muted)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+			</svg>
+		</button>
 		{#if !list.isDefault}
 			{#if confirmingDelete}
 				<span class="confirm-delete">
@@ -143,6 +157,24 @@
 		border: 1px solid var(--border-light);
 		padding: 2px 8px;
 		border-radius: 12px;
+	}
+
+	.sort-by-color-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: none;
+		border: none;
+		padding: 4px;
+		border-radius: 4px;
+		cursor: pointer;
+		opacity: 0.5;
+		transition: opacity var(--transition-fast), background var(--transition-fast);
+	}
+
+	.sort-by-color-btn:hover {
+		opacity: 1;
+		background: rgba(0, 0, 0, 0.05);
 	}
 
 	.delete-list-btn {

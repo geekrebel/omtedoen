@@ -3,7 +3,7 @@
 
 ## Bugs
 
-- [ ] Fix popover being cut off in month view (far right and far left cells)
+- [x] Fix popover being cut off in month view (far right and far left cells)
 ## Done
 
 - [x] Quick Capture: parse natural language dates ("buy milk tomorrow", "meeting next friday") via chrono-node
