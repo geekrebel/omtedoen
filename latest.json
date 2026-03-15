@@ -1,11 +1,11 @@
 {
-  "version": "0.5.2",
-  "notes": "Color-based auto-sort for tasks. Apply a color label to automatically position tasks by priority (red → amber → teal).",
-  "pub_date": "2026-03-13T02:23:48.656Z",
+  "version": "0.5.3",
+  "notes": "See the assets to download and install this version.",
+  "pub_date": "2026-03-14T10:18:16.377Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSkFLdEdHYlhzWE05RmY0SDRscGVXRDJNVTBhSG1uSENXT0cvUGcwbWZJblhVcHRmTzZocjhYaTRKVUh2NG40T2FodFdsQ3U5QTA0TnVmUFFiTG45MkpESlJSN1VRUXc4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczMzY4NjI0CWZpbGU6T21UZURvZW4uYXBwLnRhci5negpDSzZJNWNCQ04vbmtpR0hrcXdjMTNFTHY5S0VMUzU5dnljQ1ZvOXZYNzJMc1ZaY1J3cjdWRWVGWVA3c2hTMG5BVVRpYmVQQXVYa3JDY3ozUmZodGJDUT09Cg==",
-      "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.5.2/OmTeDoen_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSkFLdEdHYlhzWEJwV3l5WEFqT0FUZVgrcnNQLzcwcnlqRTV4L0tLMGFxakJEYmNCMTc5NlBxV0FNUXdKS21MN0FxazBSdHIxVE1OeXl4aVZFN21GTE40MnMwR3hDdlE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczNDgzNDkxCWZpbGU6T21UZURvZW4uYXBwLnRhci5negpHMWFzOGZMMWlRYWNGYmhOTksxeW93a0Q1UmxvVCtKeXppZktEMlhLbVpUN1NXQlN1SW5iSlpIUGVrbXM2bXVNOVZWdjc0RFpGOG5oK1k2MDRUR3dCZz09Cg==",
+      "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.5.3/OmTeDoen_aarch64.app.tar.gz"
     }
   }
 }
