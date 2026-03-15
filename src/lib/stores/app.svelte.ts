@@ -23,7 +23,7 @@ let allTasks: Task[] = $state([]);
 let allLists: List[] = $state([]);
 let parkingLotId: string = $state('');
 let defaultSomedayId: string = $state('');
-let currentView: 'focus' | 'month' | 'someday' | 'settings' = $state('focus');
+let currentView: 'focus' | 'month' | 'someday' | 'scratchpad' | 'settings' = $state('focus');
 let focusMode: boolean = $state(false);
 
 let monthOffset: number = $state(0); // 0 = current month, -1 = last month, etc.
@@ -137,7 +137,7 @@ export function getStoreType(): StoreType {
 	return storeType;
 }
 
-export function getCurrentView(): 'focus' | 'month' | 'someday' | 'settings' {
+export function getCurrentView(): 'focus' | 'month' | 'someday' | 'scratchpad' | 'settings' {
 	return currentView;
 }
 

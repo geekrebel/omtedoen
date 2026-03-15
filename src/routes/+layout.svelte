@@ -18,6 +18,7 @@
 	import MonthView from "$lib/components/MonthView.svelte";
 	import SomedayView from "$lib/components/SomedayView.svelte";
 	import SettingsView from "$lib/components/SettingsView.svelte";
+	import ScratchpadView from "$lib/components/ScratchpadView.svelte";
 	import ParkingLot from "$lib/components/ParkingLot.svelte";
 	import CommandPalette from "$lib/components/CommandPalette.svelte";
 	import QuickCapture from "$lib/components/QuickCapture.svelte";
@@ -177,6 +178,10 @@
 				e.preventDefault();
 				setCurrentView("someday");
 			}
+			if (e.key === "4") {
+				e.preventDefault();
+				setCurrentView("scratchpad");
+			}
 		}
 	}
 </script>
@@ -247,6 +252,21 @@
 					</span>
 					<span class="nav-label">Someday</span>
 					<kbd class="nav-kbd">3</kbd>
+				</button>
+
+				<button
+					class="nav-item"
+					class:active={view === "scratchpad"}
+					onclick={() => setCurrentView("scratchpad")}
+				>
+					<span class="nav-icon">
+						<svg viewBox="0 0 16 16" fill="none" class="nav-svg-icon">
+							<path d="M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" fill="currentColor" opacity="0.15" stroke="currentColor" stroke-width="1.3"/>
+							<path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+						</svg>
+					</span>
+					<span class="nav-label">Scratchpad</span>
+					<kbd class="nav-kbd">4</kbd>
 				</button>
 			</div>
 
@@ -325,6 +345,8 @@
 				<MonthView />
 			{:else if view === "someday"}
 				<SomedayView />
+			{:else if view === "scratchpad"}
+				<ScratchpadView />
 			{:else if view === "settings"}
 				<SettingsView />
 			{/if}
