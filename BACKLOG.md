@@ -26,6 +26,8 @@
 - [x] Add keyboard shortcut to move Someday items back to today
 - [ ] Add 3-dot menu on cards with quick actions (move to tomorrow, move to someday, etc.) as an alternative to keyboard shortcuts
 - [ ] Show counter/badge with number of completed tasks in the main view
+- [ ] make the purple dropdown arrow for the Parking Lot bigger! 
+- [ ] the settings button is still tiny
 ## Design
 
 - [ ] Fix the icon for the Someday tab in the sidebar. should resember a bucket or a basket or a container of some form.
