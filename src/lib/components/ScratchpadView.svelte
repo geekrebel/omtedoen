@@ -1,81 +1,199 @@
 <script lang="ts">
-	import { marked } from "marked";
 	import { saveSetting } from "$lib/stores/app.svelte.js";
-	import { onMount } from "svelte";
+	import { newId } from "$lib/core/ids.js";
+	import { onMount, tick } from "svelte";
 
-	let content = $state("");
-	let mode: "write" | "preview" = $state("write");
+	type OutlineNode = {
+		id: string;
+		text: string;
+		indent: number;
+		collapsed: boolean;
+	};
+
+	let nodes: OutlineNode[] = $state([{ id: newId(), text: "", indent: 0, collapsed: false }]);
+	let focusId: string | null = $state(null);
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
-	let textarea: HTMLTextAreaElement;
+	let nodeElements: Record<string, HTMLElement> = {};
 
-	// Load saved content on mount
 	onMount(async () => {
 		const { createStore } = await import("$lib/storage/index.js");
 		const store = await createStore();
 		const saved = await store.getSetting("scratchpad");
-		if (saved) content = saved;
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				if (Array.isArray(parsed) && parsed.length > 0) {
+					nodes = parsed;
+				}
+			} catch {
+				// Old markdown content or invalid JSON — start fresh
+			}
+		}
 	});
 
 	function autoSave() {
 		if (saveTimer) clearTimeout(saveTimer);
 		saveTimer = setTimeout(() => {
-			saveSetting("scratchpad", content);
+			saveSetting("scratchpad", JSON.stringify(nodes));
 		}, 500);
 	}
 
-	function handleInput() {
-		autoSave();
+	function hasChildren(index: number): boolean {
+		return index < nodes.length - 1 && nodes[index + 1].indent > nodes[index].indent;
 	}
 
-	function handleKeydown(e: KeyboardEvent) {
-		// Tab inserts a tab character instead of moving focus
+	function getVisibleNodes(): Array<OutlineNode & { _index: number }> {
+		const result: Array<OutlineNode & { _index: number }> = [];
+		let skipBelow = -1;
+		for (let i = 0; i < nodes.length; i++) {
+			if (skipBelow >= 0 && nodes[i].indent > skipBelow) continue;
+			skipBelow = -1;
+			result.push({ ...nodes[i], _index: i });
+			if (nodes[i].collapsed && hasChildren(i)) {
+				skipBelow = nodes[i].indent;
+			}
+		}
+		return result;
+	}
+
+	let visibleNodes = $derived(getVisibleNodes());
+
+	function focusNode(id: string, end = true) {
+		focusId = id;
+		tick().then(() => {
+			const el = nodeElements[id];
+			if (!el) return;
+			el.focus();
+			if (end && el.textContent) {
+				const range = document.createRange();
+				const sel = window.getSelection();
+				range.selectNodeContents(el);
+				range.collapse(false);
+				sel?.removeAllRanges();
+				sel?.addRange(range);
+			}
+		});
+	}
+
+	function handleKeydown(e: KeyboardEvent, id: string) {
+		const index = nodes.findIndex((n) => n.id === id);
+		if (index === -1) return;
+
+		if (e.key === "Enter") {
+			e.preventDefault();
+			const newNode: OutlineNode = { id: newId(), text: "", indent: nodes[index].indent, collapsed: false };
+			nodes = [...nodes.slice(0, index + 1), newNode, ...nodes.slice(index + 1)];
+			autoSave();
+			focusNode(newNode.id);
+			return;
+		}
+
 		if (e.key === "Tab") {
 			e.preventDefault();
-			const start = textarea.selectionStart;
-			const end = textarea.selectionEnd;
-			content = content.substring(0, start) + "\t" + content.substring(end);
-			// Restore cursor position after Svelte updates the DOM
-			setTimeout(() => {
-				textarea.selectionStart = textarea.selectionEnd = start + 1;
-			}, 0);
+			if (e.shiftKey) {
+				// Outdent
+				if (nodes[index].indent > 0) {
+					nodes[index] = { ...nodes[index], indent: nodes[index].indent - 1 };
+					nodes = [...nodes];
+					autoSave();
+				}
+			} else {
+				// Indent — only if there's a node above and we won't exceed its indent + 1
+				if (index > 0 && nodes[index].indent <= nodes[index - 1].indent) {
+					nodes[index] = { ...nodes[index], indent: nodes[index].indent + 1 };
+					nodes = [...nodes];
+					autoSave();
+				}
+			}
+			return;
+		}
+
+		if (e.key === "Backspace") {
+			const el = nodeElements[id];
+			const text = el?.textContent ?? "";
+			if (text === "" && nodes.length > 1) {
+				e.preventDefault();
+				// Find previous visible node to focus
+				const visIdx = visibleNodes.findIndex((n) => n.id === id);
+				const prevVisible = visIdx > 0 ? visibleNodes[visIdx - 1] : null;
+				nodes = nodes.filter((n) => n.id !== id);
+				autoSave();
+				if (prevVisible) focusNode(prevVisible.id);
+				return;
+			}
+		}
+
+		if (e.key === "ArrowUp") {
+			const visIdx = visibleNodes.findIndex((n) => n.id === id);
+			if (visIdx > 0) {
+				e.preventDefault();
+				focusNode(visibleNodes[visIdx - 1].id);
+			}
+			return;
+		}
+
+		if (e.key === "ArrowDown") {
+			const visIdx = visibleNodes.findIndex((n) => n.id === id);
+			if (visIdx < visibleNodes.length - 1) {
+				e.preventDefault();
+				focusNode(visibleNodes[visIdx + 1].id);
+			}
+			return;
 		}
 	}
 
-	let rendered = $derived(marked.parse(content || "*Nothing here yet. Start typing!*") as string);
+	function handleInput(e: Event, id: string) {
+		const el = e.target as HTMLElement;
+		const index = nodes.findIndex((n) => n.id === id);
+		if (index === -1) return;
+		nodes[index] = { ...nodes[index], text: el.textContent ?? "" };
+		autoSave();
+	}
+
+	function toggleCollapse(id: string) {
+		const index = nodes.findIndex((n) => n.id === id);
+		if (index === -1 || !hasChildren(index)) return;
+		nodes[index] = { ...nodes[index], collapsed: !nodes[index].collapsed };
+		nodes = [...nodes];
+		autoSave();
+	}
 </script>
 
 <div class="scratchpad-view">
 	<div class="scratchpad-header">
 		<h1>Scratchpad</h1>
-		<div class="mode-toggle">
-			<button
-				class="mode-btn"
-				class:active={mode === "write"}
-				onclick={() => mode = "write"}
-			>Write</button>
-			<button
-				class="mode-btn"
-				class:active={mode === "preview"}
-				onclick={() => mode = "preview"}
-			>Preview</button>
-		</div>
 	</div>
 
-	{#if mode === "write"}
-		<textarea
-			bind:this={textarea}
-			bind:value={content}
-			oninput={handleInput}
-			onkeydown={handleKeydown}
-			class="scratchpad-editor"
-			placeholder="Type your notes here... Markdown supported (## headings, **bold**, *italic*, - lists)"
-			spellcheck="true"
-		></textarea>
-	{:else}
-		<div class="scratchpad-preview markdown-body">
-			{@html rendered}
-		</div>
-	{/if}
+	<div class="outline-list">
+		{#each visibleNodes as node (node.id)}
+			<div class="outline-row" style="padding-left: {node.indent * 24}px">
+				<button
+					class="outline-bullet"
+					class:has-children={hasChildren(node._index)}
+					class:collapsed={node.collapsed}
+					onclick={() => toggleCollapse(node.id)}
+					tabindex={-1}
+				>
+					{#if hasChildren(node._index)}
+						<svg width="10" height="10" viewBox="0 0 10 10" class="caret">
+							<path d="M3 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+						</svg>
+					{:else}
+						<span class="dot"></span>
+					{/if}
+				</button>
+				<span
+					class="outline-text"
+					contenteditable="true"
+					role="textbox"
+					bind:this={nodeElements[node.id]}
+					onkeydown={(e) => handleKeydown(e, node.id)}
+					oninput={(e) => handleInput(e, node.id)}
+					data-placeholder="Type something..."
+				>{node.text}</span>
+			</div>
+		{/each}
+	</div>
 </div>
 
 <style>
@@ -88,9 +206,6 @@
 	}
 
 	.scratchpad-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
 		flex-shrink: 0;
 	}
 
@@ -101,161 +216,84 @@
 		margin: 0;
 	}
 
-	.mode-toggle {
-		display: flex;
-		gap: 2px;
-		background: var(--surface-secondary);
-		border-radius: 8px;
-		padding: 3px;
-	}
-
-	.mode-btn {
-		padding: 6px 14px;
-		border: none;
-		background: none;
-		border-radius: 6px;
-		font-size: 0.8rem;
-		font-weight: 500;
-		color: var(--text-muted);
-		cursor: pointer;
-		transition: all var(--transition-fast);
-	}
-
-	.mode-btn.active {
-		background: var(--surface-primary);
-		color: var(--text-primary);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-	}
-
-	.scratchpad-editor {
-		flex: 1;
-		resize: none;
-		border: 1px solid var(--border-light);
-		border-radius: 10px;
-		padding: var(--space-md);
-		font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
-		font-size: 0.85rem;
-		line-height: 1.7;
-		color: var(--text-primary);
-		background: var(--surface-primary);
-		outline: none;
-		tab-size: 4;
-		transition: border-color var(--transition-fast);
-	}
-
-	.scratchpad-editor::placeholder {
-		color: var(--text-muted);
-		opacity: 0.6;
-	}
-
-	.scratchpad-editor:focus {
-		border-color: var(--accent-primary);
-	}
-
-	.scratchpad-preview {
+	.outline-list {
 		flex: 1;
 		overflow-y: auto;
-		border: 1px solid var(--border-light);
-		border-radius: 10px;
-		padding: var(--space-md) var(--space-lg);
-		background: var(--surface-primary);
-		color: var(--text-primary);
-		line-height: 1.7;
+		padding: var(--space-sm) 0;
 	}
 
-	/* Markdown rendered styles */
-	.markdown-body :global(h1) {
-		font-size: 1.6rem;
-		font-weight: 700;
-		margin: 0 0 0.6em;
-		padding-bottom: 0.3em;
-		border-bottom: 1px solid var(--border-light);
-	}
-
-	.markdown-body :global(h2) {
-		font-size: 1.3rem;
-		font-weight: 600;
-		margin: 1.2em 0 0.4em;
-	}
-
-	.markdown-body :global(h3) {
-		font-size: 1.1rem;
-		font-weight: 600;
-		margin: 1em 0 0.3em;
-	}
-
-	.markdown-body :global(p) {
-		margin: 0 0 0.8em;
-	}
-
-	.markdown-body :global(ul),
-	.markdown-body :global(ol) {
-		margin: 0 0 0.8em;
-		padding-left: 1.5em;
-	}
-
-	.markdown-body :global(li) {
-		margin: 0.2em 0;
-	}
-
-	.markdown-body :global(code) {
-		background: var(--surface-secondary);
-		padding: 0.15em 0.4em;
+	.outline-row {
+		display: flex;
+		align-items: flex-start;
+		padding: 2px 0;
 		border-radius: 4px;
-		font-size: 0.85em;
-		font-family: "SF Mono", "Fira Code", monospace;
+		transition: background var(--transition-fast);
 	}
 
-	.markdown-body :global(pre) {
-		background: var(--surface-secondary);
-		padding: var(--space-md);
-		border-radius: 8px;
-		overflow-x: auto;
-		margin: 0 0 0.8em;
+	.outline-row:hover {
+		background: rgba(0, 0, 0, 0.02);
 	}
 
-	.markdown-body :global(pre code) {
+	.outline-bullet {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 24px;
+		flex-shrink: 0;
+		border: none;
 		background: none;
 		padding: 0;
+		cursor: pointer;
+		color: var(--text-muted);
+		transition: color var(--transition-fast);
 	}
 
-	.markdown-body :global(blockquote) {
-		border-left: 3px solid var(--accent-primary);
-		margin: 0 0 0.8em;
-		padding: 0.4em 0 0.4em 1em;
-		color: var(--text-secondary);
+	.outline-bullet:hover {
+		color: var(--text-primary);
 	}
 
-	.markdown-body :global(hr) {
-		border: none;
-		border-top: 1px solid var(--border-light);
-		margin: 1.2em 0;
+	.outline-bullet .dot {
+		display: block;
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: var(--text-muted);
+		opacity: 0.5;
 	}
 
-	.markdown-body :global(a) {
-		color: var(--accent-primary);
-		text-decoration: none;
+	.outline-bullet .caret {
+		transition: transform 0.15s ease;
 	}
 
-	.markdown-body :global(strong) {
-		font-weight: 600;
+	.outline-bullet.has-children .caret {
+		transform: rotate(90deg);
 	}
 
-	.markdown-body :global(table) {
-		border-collapse: collapse;
-		margin: 0 0 0.8em;
-		width: 100%;
+	.outline-bullet.collapsed .caret {
+		transform: rotate(0deg);
 	}
 
-	.markdown-body :global(th),
-	.markdown-body :global(td) {
-		border: 1px solid var(--border-light);
-		padding: 0.4em 0.8em;
-		text-align: left;
+	.outline-text {
+		flex: 1;
+		min-height: 24px;
+		line-height: 24px;
+		outline: none;
+		color: var(--text-primary);
+		font-size: 0.9rem;
+		padding: 0 4px;
+		word-break: break-word;
 	}
 
-	.markdown-body :global(th) {
-		background: var(--surface-secondary);
-		font-weight: 600;
+	.outline-text:empty::before {
+		content: attr(data-placeholder);
+		color: var(--text-muted);
+		opacity: 0.4;
+		pointer-events: none;
+	}
+
+	.outline-text:focus {
+		background: rgba(0, 0, 0, 0.02);
+		border-radius: 3px;
 	}
 </style>
