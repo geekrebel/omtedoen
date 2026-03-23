@@ -1,15 +1,15 @@
 {
-  "version": "0.5.5",
+  "version": "0.5.6",
   "notes": "See the assets to download and install this version.",
-  "pub_date": "2026-03-16T01:59:57.637Z",
+  "pub_date": "2026-03-23T03:16:04.308Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSkFLdEdHYlhzWElCODdHVlMwa2ZieU1HTDlWZjlLWHZWenVRSnl1cXFaWmFGL1dRVmpNRjZTVEdTQjVGeVY5SUdCTThRUDdQRUJ0RzYzSU5oTzdVcTBKYnVOSjAvREFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczNjI2MzkzCWZpbGU6T21UZURvZW4uYXBwLnRhci5negpwTERkNElHVEVDZmhXdWVZRll5Mk9wbTBTUXZFek51b081ZVdUby9UblM0aW9HVWN2a3IvdENIUHdoK0VvVDFGNk96RG8yMlZOeUNTNzEwcGdXaGZBZz09Cg==",
-      "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.5.5/OmTeDoen_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSkFLdEdHYlhzWEJ4eFp6endTWnRaTk5jRWFqU3BCQVZ3YVk5bVgwa1JSNUJoQ1ZtTmlXa0ExZTZzcTNFZFljZ0dCekZFMWZnS3g4Wk43ODcrZitsY3FkbktkV0V3ZUFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0MjM1NzU5CWZpbGU6T21UZURvZW4uYXBwLnRhci5negpiaElUZmxMU3M3MEY3VEtDaWFwRitkNnlwQ1hsckt3T3hEdXFsR1laVm9LQ2RSUGloOUlZcHp2MUpDK3VsM1FLcDc5cHNkZGdhcmpwaDlCSWNsNkVDdz09Cg==",
+      "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.5.6/OmTeDoen_aarch64.app.tar.gz"
     },
     "darwin-aarch64-app": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSkFLdEdHYlhzWElCODdHVlMwa2ZieU1HTDlWZjlLWHZWenVRSnl1cXFaWmFGL1dRVmpNRjZTVEdTQjVGeVY5SUdCTThRUDdQRUJ0RzYzSU5oTzdVcTBKYnVOSjAvREFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzczNjI2MzkzCWZpbGU6T21UZURvZW4uYXBwLnRhci5negpwTERkNElHVEVDZmhXdWVZRll5Mk9wbTBTUXZFek51b081ZVdUby9UblM0aW9HVWN2a3IvdENIUHdoK0VvVDFGNk96RG8yMlZOeUNTNzEwcGdXaGZBZz09Cg==",
-      "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.5.5/OmTeDoen_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSkFLdEdHYlhzWEJ4eFp6endTWnRaTk5jRWFqU3BCQVZ3YVk5bVgwa1JSNUJoQ1ZtTmlXa0ExZTZzcTNFZFljZ0dCekZFMWZnS3g4Wk43ODcrZitsY3FkbktkV0V3ZUFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc0MjM1NzU5CWZpbGU6T21UZURvZW4uYXBwLnRhci5negpiaElUZmxMU3M3MEY3VEtDaWFwRitkNnlwQ1hsckt3T3hEdXFsR1laVm9LQ2RSUGloOUlZcHp2MUpDK3VsM1FLcDc5cHNkZGdhcmpwaDlCSWNsNkVDdz09Cg==",
+      "url": "https://github.com/geekrebel/omtedoen/releases/download/v0.5.6/OmTeDoen_aarch64.app.tar.gz"
     }
   }
 }
