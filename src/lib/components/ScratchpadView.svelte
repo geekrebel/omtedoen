@@ -17,7 +17,7 @@
 
 	onMount(async () => {
 		const { createStore } = await import("$lib/storage/index.js");
-		const store = await createStore();
+		const { store } = await createStore();
 		const saved = await store.getSetting("scratchpad");
 		if (saved) {
 			try {
@@ -142,11 +142,7 @@
 		}
 	}
 
-	function handleInput(e: Event, id: string) {
-		const el = e.target as HTMLElement;
-		const index = nodes.findIndex((n) => n.id === id);
-		if (index === -1) return;
-		nodes[index] = { ...nodes[index], text: el.textContent ?? "" };
+	function handleInput() {
 		autoSave();
 	}
 
@@ -187,10 +183,11 @@
 					contenteditable="true"
 					role="textbox"
 					bind:this={nodeElements[node.id]}
+					bind:textContent={nodes[node._index].text}
 					onkeydown={(e) => handleKeydown(e, node.id)}
-					oninput={(e) => handleInput(e, node.id)}
+					oninput={handleInput}
 					data-placeholder="Type something..."
-				>{node.text}</span>
+				></span>
 			</div>
 		{/each}
 	</div>
