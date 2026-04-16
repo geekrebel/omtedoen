@@ -1,41 +1,44 @@
 <script lang="ts">
-	import type { Task } from "$lib/core/types.js";
 	import TaskItem from "./TaskItem.svelte";
-		import {
-		moveTask,
-		getTasksForDate,
+	import {
+		setTaskStatus,
+		getMaybeTasks,
+		getTodayColumnTasks,
+		getDoneTasks,
 		isFocusMode,
-		getToday,
 		sortTasksByColor,
+		getToday,
 	} from "$lib/stores/app.svelte.js";
-	import { dayLabel } from "$lib/utils/dates.js";
 	import { sortOrderBetween } from "$lib/core/task-engine.js";
 	import { dndzone } from "svelte-dnd-action";
 
+	type Status = "maybe" | "today" | "done";
+
 	interface Props {
-		date: string;
+		status: Status;
 		compact?: boolean;
 		onTaskHoverChange?: (isHovered: boolean) => void;
 	}
 
-	let { date, compact = false, onTaskHoverChange }: Props = $props();
+	let { status, compact = false, onTaskHoverChange }: Props = $props();
 
-	let allTasks = $derived(getTasksForDate(date));
+	let allTasks = $derived(
+		status === "maybe"
+			? getMaybeTasks()
+			: status === "today"
+				? getTodayColumnTasks()
+				: getDoneTasks(),
+	);
+
 	let focusModeActive = $derived(isFocusMode());
-	// In focus mode, only show tasks with lightning bolt on + completed tasks
 	let tasks = $derived(
-		focusModeActive
-			? allTasks.filter((t) => t.focused || t.isCompleted)
+		status === "today" && focusModeActive
+			? allTasks.filter((t) => t.focused)
 			: allTasks,
 	);
-	let completedCount = $derived(allTasks.filter((t) => t.isCompleted).length);
-	let todayDate = $derived(getToday());
-	let label = $derived(dayLabel(date, todayDate));
-	let today = $derived(date === todayDate);
-	let past = $derived(date < todayDate);
 
-	// svelte-dnd-action requires items to be mutable state that is updated synchronously
-	// in onconsider and onfinalize.
+	const label = { maybe: "Maybe", today: "Today", done: "Done" }[status];
+
 	let dndItems = $state<any[]>([]);
 
 	$effect(() => {
@@ -54,40 +57,35 @@
 			const after =
 				idx < items.length - 1 ? items[idx + 1].sortOrder : null;
 			const newOrder = sortOrderBetween(before, after);
-			if (item.dateTarget !== date || item.sortOrder !== newOrder) {
-				// Prevent loop calls if already matching
-				item.sortOrder = newOrder;
-				item.dateTarget = date;
-				moveTask(item.id, date, null, newOrder);
+			const original = allTasks.find((t) => t.id === item.id);
+			if (!original || original.sortOrder !== newOrder) {
+				setTaskStatus(item.id, status, newOrder);
 			}
 		});
 	}
 </script>
 
-<div class="day-column" class:today class:past class:compact>
+<div class="day-column" class:today={status === "today"} class:compact>
 	<div class="day-header">
 		<h3 class="day-label">{label}</h3>
-		{#if tasks.filter((t) => !t.isCompleted).length > 0}
-			<span class="task-count"
-				>{tasks.filter((t) => !t.isCompleted).length}</span
+		{#if tasks.length > 0}
+			<span class="task-count">{tasks.length}</span>
+		{/if}
+		{#if status === "today"}
+			<button
+				class="sort-by-color-btn"
+				onclick={() => sortTasksByColor(getToday())}
+				aria-label="Sort by color priority"
+				title="Sort by color"
 			>
+				<svg width="14" height="14" viewBox="0 0 14 14">
+					<line x1="2" y1="3" x2="9" y2="3" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+					<line x1="2" y1="7" x2="9" y2="7" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+					<line x1="2" y1="11" x2="9" y2="11" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
+					<polyline points="11,5 12.5,8 11,8 11,12" fill="none" stroke="var(--text-muted)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+				</svg>
+			</button>
 		{/if}
-		{#if completedCount > 0}
-			<span class="completed-count">{completedCount} done</span>
-		{/if}
-		<button
-			class="sort-by-color-btn"
-			onclick={() => sortTasksByColor(date)}
-			aria-label="Sort by color priority"
-			title="Sort by color"
-		>
-			<svg width="14" height="14" viewBox="0 0 14 14">
-				<line x1="2" y1="3" x2="9" y2="3" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
-				<line x1="2" y1="7" x2="9" y2="7" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
-				<line x1="2" y1="11" x2="9" y2="11" stroke="#06b6d4" stroke-width="2" stroke-linecap="round"/>
-				<polyline points="11,5 12.5,8 11,8 11,12" fill="none" stroke="var(--text-muted)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-			</svg>
-		</button>
 	</div>
 
 	<div
@@ -103,7 +101,6 @@
 			<TaskItem {task} {onTaskHoverChange} />
 		{/each}
 	</div>
-
 </div>
 
 <style>
@@ -158,13 +155,6 @@
 		border: 1px solid var(--border-light);
 		padding: 2px 8px;
 		border-radius: 12px;
-	}
-
-	.completed-count {
-		font-size: 12px;
-		font-weight: 500;
-		color: var(--text-secondary);
-		opacity: 0.7;
 	}
 
 	.sort-by-color-btn {

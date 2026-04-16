@@ -3,7 +3,7 @@ import type { StoreType } from '$lib/storage/index.js';
 import type { Task, List, ColorLabel } from '$lib/core/types.js';
 import { createTask, createList } from '$lib/core/types.js';
 import { newId } from '$lib/core/ids.js';
-import { todayISO } from '$lib/utils/dates.js';
+import { todayISO, addDays } from '$lib/utils/dates.js';
 import {
 	rolloverTasks,
 	parkStaleTasks,
@@ -98,6 +98,77 @@ export function getTasksForDate(date: string): Task[] {
 			if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
 			return a.sortOrder - b.sortOrder;
 		});
+}
+
+export function getMaybeTasks(): Task[] {
+	const todayDate = today;
+	return allTasks
+		.filter(
+			(t) =>
+				!t.isCompleted &&
+				!t.parked &&
+				!t.deletedAt &&
+				t.dateTarget !== null &&
+				t.dateTarget > todayDate
+		)
+		.sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export function getTodayColumnTasks(): Task[] {
+	const todayDate = today;
+	return allTasks
+		.filter(
+			(t) =>
+				!t.isCompleted &&
+				!t.parked &&
+				!t.deletedAt &&
+				t.dateTarget === todayDate
+		)
+		.sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export function getDoneTasks(): Task[] {
+	const todayDate = today;
+	return allTasks
+		.filter(
+			(t) =>
+				t.isCompleted &&
+				!t.deletedAt &&
+				t.dateTarget === todayDate
+		)
+		.sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export async function setTaskStatus(
+	taskId: string,
+	status: 'maybe' | 'today' | 'done',
+	sortOrder: number
+): Promise<void> {
+	const task = allTasks.find((t) => t.id === taskId);
+	if (!task) return;
+	const todayDate = today;
+
+	let newDate: string | null;
+	let shouldBeCompleted: boolean;
+	if (status === 'maybe') {
+		newDate =
+			task.dateTarget && task.dateTarget > todayDate
+				? task.dateTarget
+				: addDays(todayDate, 1);
+		shouldBeCompleted = false;
+	} else if (status === 'today') {
+		newDate = todayDate;
+		shouldBeCompleted = false;
+	} else {
+		newDate = todayDate;
+		shouldBeCompleted = true;
+	}
+
+	await moveTask(taskId, newDate, null, sortOrder);
+	const updated = allTasks.find((t) => t.id === taskId);
+	if (updated && updated.isCompleted !== shouldBeCompleted) {
+		await toggleTask(taskId);
+	}
 }
 
 export function getTasksForList(listId: string): Task[] {
