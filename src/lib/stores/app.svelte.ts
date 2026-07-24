@@ -234,9 +234,76 @@ export function setMonthOffset(n: number) {
 	monthOffset = n;
 }
 
+// Cross-window sync — the panel window and main window each hold their own
+// $state copy of the shared SQLite data, so mutations broadcast a Tauri event
+// and the other window reloads.
+const MUTATING_STORE_METHODS = [
+	'upsertTask',
+	'upsertTasks',
+	'upsertList',
+	'softDeleteTask',
+	'softDeleteList'
+];
+let emitTimer: ReturnType<typeof setTimeout> | null = null;
+
+function isTauri(): boolean {
+	return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+}
+
+function notifyChanged(): void {
+	if (!isTauri()) return;
+	if (emitTimer) clearTimeout(emitTimer);
+	emitTimer = setTimeout(async () => {
+		try {
+			const { emit } = await import('@tauri-apps/api/event');
+			const { getCurrentWindow } = await import('@tauri-apps/api/window');
+			await emit('tasks-changed', { source: getCurrentWindow().label });
+		} catch {
+			// Not fatal — the other window just won't refresh until its next reload
+		}
+	}, 150);
+}
+
+function withChangeNotify(s: TodoStore): TodoStore {
+	return new Proxy(s, {
+		get(target, prop, receiver) {
+			const value = Reflect.get(target, prop, receiver);
+			if (typeof value === 'function' && MUTATING_STORE_METHODS.includes(String(prop))) {
+				return async (...args: unknown[]) => {
+					const result = await (value as (...a: unknown[]) => Promise<unknown>).apply(
+						target,
+						args
+					);
+					notifyChanged();
+					return result;
+				};
+			}
+			return typeof value === 'function' ? value.bind(target) : value;
+		}
+	});
+}
+
+let syncStarted = false;
+export async function startCrossWindowSync(): Promise<void> {
+	if (syncStarted || !isTauri()) return;
+	syncStarted = true;
+	try {
+		const { listen } = await import('@tauri-apps/api/event');
+		const { getCurrentWindow } = await import('@tauri-apps/api/window');
+		const myLabel = getCurrentWindow().label;
+		await listen<{ source: string }>('tasks-changed', async (e) => {
+			if (e.payload?.source === myLabel || !store) return;
+			allTasks = await store.getAllTasks();
+			allLists = await store.getAllLists();
+		});
+	} catch {
+		syncStarted = false;
+	}
+}
+
 // Initialization
 export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
-	store = s;
+	store = withChangeNotify(s);
 	storeType = type;
 
 	// Load data

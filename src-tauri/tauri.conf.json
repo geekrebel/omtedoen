@@ -10,8 +10,10 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
+        "label": "main",
         "title": "OmTeDoen",
         "width": 1100,
         "height": 700,
@@ -19,6 +21,24 @@
         "minHeight": 500,
         "resizable": true,
         "fullscreen": false
+      },
+      {
+        "label": "panel",
+        "title": "OmTeDoen Panel",
+        "url": "/panel",
+        "width": 28,
+        "height": 560,
+        "x": 0,
+        "y": 200,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "shadow": false,
+        "focus": false,
+        "acceptFirstMouse": true,
+        "visibleOnAllWorkspaces": true
       }
     ],
     "security": {

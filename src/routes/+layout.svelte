@@ -1,6 +1,7 @@
 <script lang="ts">
 	import "../app.css";
 	import { onMount, tick } from "svelte";
+	import { page } from "$app/state";
 	import type { Snippet } from "svelte";
 	import { createStore } from "$lib/storage/index.js";
 	import {
@@ -13,6 +14,7 @@
 		getParkedTasks,
 		getSomedayLists,
 		undo,
+		startCrossWindowSync,
 	} from "$lib/stores/app.svelte.js";
 	import FocusView from "$lib/components/FocusView.svelte";
 	import MonthView from "$lib/components/MonthView.svelte";
@@ -40,10 +42,17 @@
 	let parkedTasks = $derived(getParkedTasks());
 	let somedayLists = $derived(getSomedayLists());
 
+	// The /panel route is a separate slim window — it gets store init and
+	// cross-window sync, but none of the app shell, shortcuts, or updater UI
+	let isPanel = $derived(page.url.pathname.startsWith("/panel"));
+
 	onMount(async () => {
 		const { store, type } = await createStore();
 		await initStore(store, type);
+		startCrossWindowSync();
 		ready = true;
+
+		if (isPanel) return;
 
 		// Wait for Svelte to mount components now that ready=true
 		await tick();
@@ -133,6 +142,7 @@
 	}
 
 	function handleGlobalKeydown(e: KeyboardEvent) {
+		if (isPanel) return;
 		// Cmd+K / Ctrl+K — command palette
 		if ((e.metaKey || e.ctrlKey) && e.key === "k") {
 			e.preventDefault();
@@ -188,7 +198,11 @@
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 
-{#if !ready}
+{#if isPanel}
+	{#if ready}
+		{@render children()}
+	{/if}
+{:else if !ready}
 	<div class="loading">
 		<span>Loading...</span>
 	</div>
@@ -363,7 +377,9 @@
 	/>
 {/if}
 
-{@render children()}
+{#if !isPanel}
+	{@render children()}
+{/if}
 
 <style>
 	.loading {

@@ -3,7 +3,8 @@
   "identifier": "default",
   "description": "Default capabilities for OmTeDoen",
   "windows": [
-    "main"
+    "main",
+    "panel"
   ],
   "permissions": [
     "core:default",
@@ -23,6 +24,8 @@
     "process:allow-restart",
     "core:window:allow-inner-size",
     "core:window:allow-set-size",
-    "core:window:allow-set-min-size"
+    "core:window:allow-set-min-size",
+    "core:window:allow-set-position",
+    "core:window:allow-set-focus"
   ]
 }
