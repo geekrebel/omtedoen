@@ -389,13 +389,13 @@
 		cursor: default;
 		min-height: 48px;
 		position: relative;
-		overflow: hidden;
 	}
 
 	.task-item::before {
 		content: "";
 		position: absolute;
 		inset: 0;
+		border-radius: inherit;
 		background: linear-gradient(
 			135deg,
 			rgba(0, 0, 0, 0.05) 0%,

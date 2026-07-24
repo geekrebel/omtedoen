@@ -671,6 +671,7 @@
 
 	.app.focus-mode .main-content {
 		max-width: 580px;
+		margin: 0 auto;
 	}
 
 	.update-installing {

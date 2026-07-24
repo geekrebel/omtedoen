@@ -259,8 +259,8 @@ a:hover {
 }
 
 /* Focus mode — minimalist single-column layout */
-.focus-mode .focus-col-yesterday,
-.focus-mode .focus-col-tomorrow {
+.focus-mode .focus-col-maybe,
+.focus-mode .focus-col-done {
 	flex: 0;
 	max-width: 0;
 	opacity: 0;

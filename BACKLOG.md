@@ -4,6 +4,10 @@
 ## Bugs
 
 - [x] Fix popover being cut off in month view (far right and far left cells)
+- [x] 3-dot menu on cards is obscured by the card's bounding box (fixed: removed `overflow: hidden` clipping on `.task-item`; Trello-style card flip still open as a future enhancement)
+- [x] Fix viewport when switching into focus mode (fixed: stale `.focus-col-yesterday/tomorrow` selectors renamed to `maybe/done`, content column now centered)
+- [x] Kanban columns had unequal heights (Today box ended mid-panel)
+- [x] Completing a task dated in the future made it vanish from all kanban columns
 ## Done
 
 - [x] Quick Capture: parse natural language dates ("buy milk tomorrow", "meeting next friday") via chrono-node
@@ -25,6 +29,8 @@
 - [ ] Make settings button bigger (currently hard to hit in sidebar)
 - [x] Add keyboard shortcut to move Someday items back to today
 - [ ] Add 3-dot menu on cards with quick actions (move to tomorrow, move to someday, etc.) as an alternative to keyboard shortcuts
+- [ ] Allow multiple cards to be selected (for bulk actions like move, delete, etc.)
+- [ ] Add Gmail-style keyboard shortcuts: j/k to navigate up/down, x to select, # to delete, etc.
 - [ ] Show counter/badge with number of completed tasks in the main view
 - [ ] make the purple dropdown arrow for the Parking Lot bigger! 
 - [ ] the settings button is still tiny
@@ -36,6 +42,8 @@
 - [ ] find a better way  to go into Focus mode. The lightning button is too small and in the wrong place. 
 
 ## System
+
+- [ ] Build a way to test that UX is working as intended (e.g. end-to-end/integration tests for UI flows)
 
 
 ## Licence

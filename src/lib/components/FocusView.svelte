@@ -75,6 +75,8 @@
 	.focus-col {
 		flex: 1;
 		min-width: 0;
+		display: flex;
+		flex-direction: column;
 		transition:
 			flex 0.3s cubic-bezier(0.4, 0, 0.2, 1),
 			max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),

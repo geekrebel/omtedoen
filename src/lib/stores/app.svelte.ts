@@ -134,7 +134,8 @@ export function getDoneTasks(): Task[] {
 			(t) =>
 				t.isCompleted &&
 				!t.deletedAt &&
-				t.dateTarget === todayDate
+				t.dateTarget !== null &&
+				t.dateTarget >= todayDate
 		)
 		.sort((a, b) => a.sortOrder - b.sortOrder);
 }
