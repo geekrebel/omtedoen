@@ -5,6 +5,7 @@
 	import { todayISO } from "$lib/utils/dates.js";
 
 	const COLLAPSED_W = 28;
+	const COLLAPSED_H = 56; // ~10% of the expanded height
 	const EXPANDED_W = 400;
 	const PANEL_H = 560;
 
@@ -17,12 +18,24 @@
 	let value = $state("");
 	let collapseTimer: ReturnType<typeof setTimeout> | null = null;
 
-	async function setWindowWidth(w: number) {
+	// Top of the expanded panel; recomputed from the screen size in onMount.
+	// The collapsed tab keeps the expanded panel's bottom edge, so hovering
+	// the tab grows the window upward into the same footprint as before.
+	let baseY = 200;
+	const collapsedY = () => baseY + PANEL_H - COLLAPSED_H;
+
+	async function setWindowBounds(w: number, h: number, y: number) {
 		if (!isTauri) return;
 		try {
 			const { getCurrentWindow } = await import("@tauri-apps/api/window");
-			const { LogicalSize } = await import("@tauri-apps/api/dpi");
-			await getCurrentWindow().setSize(new LogicalSize(w, PANEL_H));
+			const { LogicalSize, LogicalPosition } = await import(
+				"@tauri-apps/api/dpi"
+			);
+			const win = getCurrentWindow();
+			await Promise.all([
+				win.setPosition(new LogicalPosition(0, y)),
+				win.setSize(new LogicalSize(w, h)),
+			]);
 		} catch {}
 	}
 
@@ -36,7 +49,7 @@
 		dragging = false;
 		if (!expanded) {
 			expanded = true;
-			setWindowWidth(EXPANDED_W);
+			setWindowBounds(EXPANDED_W, PANEL_H, baseY);
 		}
 	}
 
@@ -49,7 +62,7 @@
 				return;
 			}
 			expanded = false;
-			setWindowWidth(COLLAPSED_W);
+			setWindowBounds(COLLAPSED_W, COLLAPSED_H, collapsedY());
 		}, 300);
 	}
 
@@ -83,17 +96,11 @@
 		}
 		let unlistenFns: Array<() => void> = [];
 		(async () => {
-			try {
-				const { getCurrentWindow } = await import(
-					"@tauri-apps/api/window"
-				);
-				const { LogicalPosition } = await import("@tauri-apps/api/dpi");
-				const y = Math.max(
-					0,
-					Math.round((window.screen.availHeight - PANEL_H) / 2),
-				);
-				await getCurrentWindow().setPosition(new LogicalPosition(0, y));
-			} catch {}
+			baseY = Math.max(
+				0,
+				Math.round((window.screen.availHeight - PANEL_H) / 2),
+			);
+			await setWindowBounds(COLLAPSED_W, COLLAPSED_H, collapsedY());
 			try {
 				// Hover detection comes from a native cursor watcher in Rust:
 				// macOS never delivers mouseMoved to this unfocused window, so
