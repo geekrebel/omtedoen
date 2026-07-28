@@ -7,7 +7,20 @@
 		exportData,
 		getStoreType,
 	} from "$lib/stores/app.svelte.js";
-	import { version } from "../../../package.json";
+	import { onMount } from "svelte";
+	import { version as pkgVersion } from "../../../package.json";
+
+	// The packaged app's real version lives in tauri.conf.json — ask Tauri at
+	// runtime instead of trusting package.json, which is not bumped on release
+	let version = $state(pkgVersion);
+	onMount(async () => {
+		if (typeof window === "undefined" || !("__TAURI_INTERNALS__" in window))
+			return;
+		try {
+			const { getVersion } = await import("@tauri-apps/api/app");
+			version = await getVersion();
+		} catch {}
+	});
 
 	let focusModeActive = $derived(isFocusMode());
 	let storageType = $derived(getStoreType());

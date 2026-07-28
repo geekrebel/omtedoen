@@ -17,7 +17,9 @@ Update the version in **`src-tauri/tauri.conf.json`**:
 "version": "X.Y.Z"
 ```
 
-**Why:** The build workflow uses this version to create correctly-named artifacts (e.g., `OmTeDoen_X.Y.Z_aarch64.dmg`).
+**Why:** The build workflow uses this version to create correctly-named artifacts (e.g., `OmTeDoen_X.Y.Z_aarch64.dmg`). It is the authoritative app version — the Settings "About" section reads it at runtime via `getVersion()`.
+
+Also bump **`package.json`** and **`src-tauri/Cargo.toml`** to the same version. These are cosmetic (the web fallback for About, and the crate version), but letting them drift causes confusion — package.json sat at 0.5.2 for seven releases while About displayed it.
 
 ### 3. Commit Version Bump
 ```bash
