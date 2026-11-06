@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rolloverTasks, parkStaleTasks, completeTask, freshStart, nextSortOrder, sortOrderBetween } from '$lib/core/task-engine.js';
+import { rolloverTasks, parkStaleTasks, completeTask, freshStart, nextSortOrder, sortOrderBetween, isBoardCard } from '$lib/core/task-engine.js';
 import { createTask } from '$lib/core/types.js';
 
 describe('rolloverTasks', () => {
@@ -55,6 +55,19 @@ describe('parkStaleTasks', () => {
 		const result = parkStaleTasks(tasks, 'parking-lot-id');
 		expect(result).toHaveLength(0);
 	});
+
+	it('keeps stale board cards on their list and only takes them off the day', () => {
+		const tasks = [
+			createTask({ id: '1', title: 'Board card', listId: 'board-a', dateTarget: '2026-03-05', rolloverCount: 3, listSortOrder: 4 }),
+		];
+		const result = parkStaleTasks(tasks, 'parking-lot-id');
+		expect(result).toHaveLength(1);
+		expect(result[0].listId).toBe('board-a');
+		expect(result[0].listSortOrder).toBe(4);
+		expect(result[0].parked).toBe(false);
+		expect(result[0].dateTarget).toBeNull();
+		expect(result[0].rolloverCount).toBe(0);
+	});
 });
 
 describe('completeTask', () => {
@@ -89,9 +102,25 @@ describe('freshStart', () => {
 			createTask({ id: '2', title: 'Complete', isCompleted: true, completedAt: 'now' }),
 			createTask({ id: '3', title: 'Also incomplete' }),
 		];
-		const result = freshStart(tasks);
-		expect(result).toHaveLength(2);
-		expect(result.every(t => t.deletedAt !== null)).toBe(true);
+		const { archived, unscheduled } = freshStart(tasks);
+		expect(archived).toHaveLength(2);
+		expect(archived.every(t => t.deletedAt !== null)).toBe(true);
+		expect(unscheduled).toHaveLength(0);
+	});
+
+	it('never deletes board cards; scheduled ones just lose their date', () => {
+		const tasks = [
+			createTask({ id: '1', title: 'Board, on Today', listId: 'board-a', dateTarget: '2026-03-05' }),
+			createTask({ id: '2', title: 'Board, undated', listId: 'board-a' }),
+			createTask({ id: '3', title: 'Parked', listId: 'parking-lot-id', parked: true }),
+			createTask({ id: '4', title: 'Plain day task', dateTarget: '2026-03-05' }),
+		];
+		const { archived, unscheduled } = freshStart(tasks, 'parking-lot-id');
+		expect(archived.map(t => t.id).sort()).toEqual(['3', '4']);
+		expect(unscheduled.map(t => t.id)).toEqual(['1']);
+		expect(unscheduled[0].dateTarget).toBeNull();
+		expect(unscheduled[0].listId).toBe('board-a');
+		expect(unscheduled[0].deletedAt).toBeNull();
 	});
 });
 
@@ -125,5 +154,22 @@ describe('nextSortOrder', () => {
 
 	it('returns 1 for empty list', () => {
 		expect(nextSortOrder([])).toBe(1);
+	});
+});
+
+describe('isBoardCard', () => {
+	it('treats any list except the Parking Lot as the board', () => {
+		expect(isBoardCard(createTask({ id: '1', title: 'a', listId: 'board-a' }), 'pl')).toBe(true);
+		expect(isBoardCard(createTask({ id: '2', title: 'b', listId: 'pl' }), 'pl')).toBe(false);
+		expect(isBoardCard(createTask({ id: '3', title: 'c', dateTarget: '2026-03-05' }), 'pl')).toBe(false);
+	});
+});
+
+describe('rolloverTasks with board cards', () => {
+	it('rolls a board card scheduled in the past onto today and keeps its list', () => {
+		const tasks = [createTask({ id: '1', title: 'Board', listId: 'board-a', dateTarget: '2026-03-01' })];
+		const [rolled] = rolloverTasks(tasks, '2026-03-05');
+		expect(rolled.dateTarget).toBe('2026-03-05');
+		expect(rolled.listId).toBe('board-a');
 	});
 });

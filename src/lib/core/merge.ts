@@ -2,13 +2,13 @@ import type { Task, List } from './types.js';
 
 const TASK_MERGE_FIELDS = [
 	'title', 'markdownBody', 'isCompleted', 'completedAt',
-	'dateTarget', 'listId', 'sortOrder', 'priority',
+	'dateTarget', 'listId', 'sortOrder', 'listSortOrder', 'priority', 'focused', 'colorLabel',
 	'parked', 'parkedAt', 'rolloverCount',
 	'recurrenceRule', 'recurrenceNext', 'steps', 'deletedAt'
 ] as const;
 
 const LIST_MERGE_FIELDS = [
-	'name', 'sortOrder', 'color', 'isParkingLot', 'deletedAt'
+	'name', 'sortOrder', 'color', 'isParkingLot', 'isDefault', 'deletedAt'
 ] as const;
 
 /**

@@ -10,6 +10,7 @@ import {
 	completeTask as completeTaskEngine,
 	uncompleteTask as uncompleteTaskEngine,
 	freshStart as freshStartEngine,
+	isBoardCard,
 	nextSortOrder,
 	sortOrderBetween
 } from '$lib/core/task-engine.js';
@@ -165,7 +166,7 @@ export async function setTaskStatus(
 		shouldBeCompleted = true;
 	}
 
-	await moveTask(taskId, newDate, null, sortOrder);
+	await moveTask(taskId, newDate, boardListOf(task), sortOrder);
 	const updated = allTasks.find((t) => t.id === taskId);
 	if (updated && updated.isCompleted !== shouldBeCompleted) {
 		await toggleTask(taskId);
@@ -177,8 +178,19 @@ export function getTasksForList(listId: string): Task[] {
 		.filter((t) => t.listId === listId && !t.deletedAt)
 		.sort((a, b) => {
 			if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
-			return a.sortOrder - b.sortOrder;
+			return a.listSortOrder - b.listSortOrder;
 		});
+}
+
+function nextListSortOrder(listId: string): number {
+	const inList = allTasks.filter((t) => t.listId === listId && !t.deletedAt);
+	if (inList.length === 0) return 1;
+	return Math.max(...inList.map((t) => t.listSortOrder)) + 1;
+}
+
+/** The board list a task belongs to, or null (the Parking Lot is not a board list). */
+export function boardListOf(task: Task): string | null {
+	return isBoardCard(task, parkingLotId) ? task.listId : null;
 }
 
 export function getParkedTasks(): Task[] {
@@ -437,6 +449,7 @@ export async function addTask(
 		priority,
 		focused: effectiveDate === todayISO(),
 		sortOrder: nextSortOrder(tasksInContext),
+		listSortOrder: listId ? nextListSortOrder(listId) : 0,
 		recurrenceRule: ruleText,
 		recurrenceNext: rule ? nextOccurrence(rule, effectiveDate || todayISO()) : null
 	});
@@ -526,6 +539,59 @@ export async function moveTask(taskId: string, newDate: string | null, newListId
 	allTasks = allTasks.map((t) => (t.id === taskId ? updated : t));
 }
 
+/**
+ * Put a task on a day (Today, Tomorrow…). Board cards keep their board list,
+ * so the day view and the board show the same card.
+ */
+export async function scheduleTask(taskId: string, date: string, sortOrder: number): Promise<void> {
+	const task = allTasks.find((t) => t.id === taskId);
+	if (!task) return;
+	await moveTask(taskId, date, boardListOf(task), sortOrder);
+}
+
+/**
+ * Take a task off the day views. A board card just loses its date and stays on
+ * its list; anything else goes to the default Someday list.
+ */
+export async function unscheduleTask(taskId: string): Promise<void> {
+	const task = allTasks.find((t) => t.id === taskId);
+	if (!task) return;
+	const listId = boardListOf(task) ?? defaultSomedayId;
+	const listSortOrder = task.listId === listId ? task.listSortOrder : nextListSortOrder(listId);
+	await moveTask(taskId, null, listId, task.sortOrder);
+	await setListPosition(taskId, listId, listSortOrder);
+}
+
+/** Move a card to a board list / position. Keeps its date and completion. */
+export async function moveTaskToList(taskId: string, listId: string, listSortOrder: number): Promise<void> {
+	await setListPosition(taskId, listId, listSortOrder);
+}
+
+async function setListPosition(taskId: string, listId: string, listSortOrder: number): Promise<void> {
+	if (!store) throw new Error('Store not initialized');
+	const task = allTasks.find((t) => t.id === taskId);
+	if (!task) return;
+	if (task.listId === listId && task.listSortOrder === listSortOrder) return;
+	const now = new Date().toISOString();
+	const updated: Task = {
+		...task,
+		listId,
+		listSortOrder,
+		parked: false,
+		parkedAt: null,
+		updatedAt: now,
+		fieldTimestamps: {
+			...task.fieldTimestamps,
+			listId: now,
+			listSortOrder: now,
+			parked: now,
+			parkedAt: now
+		}
+	};
+	await store.upsertTask(updated);
+	allTasks = allTasks.map((t) => (t.id === taskId ? updated : t));
+}
+
 export async function unparkTask(taskId: string): Promise<void> {
 	const todayDate = todayISO();
 	const todayTasks = getTasksForDate(todayDate);
@@ -539,26 +605,60 @@ export async function addList(name: string): Promise<List> {
 	const list = createList({
 		id: newId(),
 		name,
-		sortOrder: nextSortOrder(allLists as any)
+		sortOrder: nextSortOrder(getSomedayLists() as any)
 	});
 	await store.upsertList(list);
 	allLists = [...allLists, list];
 	return list;
 }
 
-export async function deleteList(id: string): Promise<void> {
+async function patchList(id: string, patch: Partial<List>): Promise<void> {
 	if (!store) throw new Error('Store not initialized');
-	await store.softDeleteList(id);
-	allLists = allLists.filter((l) => l.id !== id);
-	// Also remove tasks in this list
-	const tasksInList = allTasks.filter((t) => t.listId === id);
-	for (const task of tasksInList) {
-		await store.softDeleteTask(task.id);
-	}
-	allTasks = allTasks.filter((t) => t.listId !== id);
+	const list = allLists.find((l) => l.id === id);
+	if (!list) return;
+	const now = new Date().toISOString();
+	const ts = Object.fromEntries(Object.keys(patch).map((k) => [k, now]));
+	const updated: List = {
+		...list,
+		...patch,
+		updatedAt: now,
+		fieldTimestamps: { ...list.fieldTimestamps, ...ts }
+	};
+	await store.upsertList(updated);
+	allLists = allLists.map((l) => (l.id === id ? updated : l));
 }
 
-// Data export
+export async function renameList(id: string, name: string): Promise<void> {
+	const trimmed = name.trim();
+	if (!trimmed) return;
+	await patchList(id, { name: trimmed });
+}
+
+export async function reorderList(id: string, sortOrder: number): Promise<void> {
+	await patchList(id, { sortOrder });
+}
+
+/**
+ * Delete a board list. Its cards are NOT deleted: they move to the default
+ * Someday list (keeping any Today/date scheduling). The default list and the
+ * Parking Lot cannot be deleted.
+ */
+export async function deleteList(id: string): Promise<number> {
+	if (!store) throw new Error('Store not initialized');
+	const list = allLists.find((l) => l.id === id);
+	if (!list || list.isDefault || list.isParkingLot) return 0;
+	const cards = allTasks
+		.filter((t) => t.listId === id && !t.deletedAt)
+		.sort((a, b) => a.listSortOrder - b.listSortOrder);
+	let order = nextListSortOrder(defaultSomedayId);
+	for (const card of cards) {
+		await setListPosition(card.id, defaultSomedayId, order++);
+	}
+	await store.softDeleteList(id);
+	allLists = allLists.filter((l) => l.id !== id);
+	return cards.length;
+}
+
 export function exportData(): string {
 	const data = {
 		version: 1,
@@ -572,9 +672,12 @@ export function exportData(): string {
 // Fresh start
 export async function doFreshStart(): Promise<number> {
 	if (!store) throw new Error('Store not initialized');
-	const archived = freshStartEngine(allTasks);
-	await store.upsertTasks(archived);
-	allTasks = allTasks.filter((t) => t.isCompleted || t.deletedAt);
+	const { archived, unscheduled } = freshStartEngine(allTasks, parkingLotId);
+	await store.upsertTasks([...archived, ...unscheduled]);
+	const archivedIds = new Set(archived.map((t) => t.id));
+	allTasks = allTasks
+		.filter((t) => !archivedIds.has(t.id))
+		.map((t) => unscheduled.find((u) => u.id === t.id) || t);
 	return archived.length;
 }
 
@@ -622,14 +725,14 @@ export function sortListTasksByColor(listId: string): void {
 		.sort((a, b) => {
 			const cp = colorPriority(a.colorLabel) - colorPriority(b.colorLabel);
 			if (cp !== 0) return cp;
-			return a.sortOrder - b.sortOrder;
+			return a.listSortOrder - b.listSortOrder;
 		});
 	let prevOrder: number | null = null;
 	for (const task of tasks) {
 		const newOrder = sortOrderBetween(prevOrder, null);
 		prevOrder = newOrder;
-		if (task.sortOrder !== newOrder) {
-			updateTask({ ...task, sortOrder: newOrder });
+		if (task.listSortOrder !== newOrder) {
+			updateTask({ ...task, listSortOrder: newOrder });
 		}
 	}
 }

@@ -5,8 +5,9 @@
 		toggleTask,
 		updateTask,
 		deleteTask,
-		moveTask,
-		getDefaultSomedayId,
+		scheduleTask,
+		unscheduleTask,
+		boardListOf,
 		getToday,
 		getTodayTasks,
 		setTaskColorLabel,
@@ -16,10 +17,23 @@
 
 	interface Props {
 		task: Task;
+		/** "board" = shown on a Someday board list (shows its date instead of the list icon) */
+		variant?: "day" | "board";
 		onTaskHoverChange?: (isHovered: boolean) => void;
 	}
 
-	let { task, onTaskHoverChange }: Props = $props();
+	let { task, variant = "day", onTaskHoverChange }: Props = $props();
+
+	let onBoard = $derived(boardListOf(task) !== null);
+	let dateChip = $derived.by(() => {
+		if (!task.dateTarget) return null;
+		const today = getToday();
+		if (task.dateTarget === today) return "Today";
+		if (task.dateTarget === addDays(today, 1)) return "Tomorrow";
+		if (task.dateTarget < today) return "Overdue";
+		const d = new Date(task.dateTarget + "T00:00:00");
+		return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+	});
 
 	let editing = $state(false);
 	let editValue = $state("");
@@ -143,25 +157,30 @@
 	function moveToTomorrow() {
 		if (!task.dateTarget) return;
 		const tomorrow = addDays(task.dateTarget, 1);
-		moveTask(task.id, tomorrow, null, task.sortOrder);
+		scheduleTask(task.id, tomorrow, task.sortOrder);
 	}
 
 	function moveToSomeday() {
+		if (!task.dateTarget) return; // already only on the board
+		// Board cards stay put on the board, so only animate cards that actually leave
+		if (variant === "board") {
+			unscheduleTask(task.id);
+			return;
+		}
 		animateToSomeday = true;
 		setTimeout(() => {
-			moveTask(task.id, null, getDefaultSomedayId(), task.sortOrder);
+			unscheduleTask(task.id);
 			animateToSomeday = false;
 		}, 500);
 	}
 
 	function moveToToday() {
-		if (task.listId) {
-			const todayTasks = getTodayTasks();
-			const topSortOrder = todayTasks.length > 0
-				? sortOrderBetween(null, Math.min(...todayTasks.map((t) => t.sortOrder)))
-				: 1;
-			moveTask(task.id, getToday(), null, topSortOrder);
-		}
+		if (task.dateTarget === getToday()) return;
+		const todayTasks = getTodayTasks();
+		const topSortOrder = todayTasks.length > 0
+			? sortOrderBetween(null, Math.min(...todayTasks.map((t) => t.sortOrder)))
+			: 1;
+		scheduleTask(task.id, getToday(), topSortOrder);
 	}
 
 	function toggleStep(stepIdx: number) {
@@ -185,6 +204,7 @@
 
 <div
 	class="task-item"
+	class:board={variant === "board"}
 	class:completed={task.isCompleted}
 	class:celebrate={justCompleted}
 	class:parked={task.parked}
@@ -219,6 +239,8 @@
 		{/if}
 	</button>
 
+	<!-- Focus only matters on Today, so board cards only show it once they're on Today -->
+	{#if variant === "day" || task.dateTarget === getToday()}
 	<button
 		data-no-dnd="true"
 		class="bolt-btn"
@@ -234,6 +256,7 @@
 			/>
 		</svg>
 	</button>
+	{/if}
 
 	{#if task.colorLabel !== "none"}
 		<span
@@ -242,11 +265,11 @@
 		></span>
 	{/if}
 
-	{#if task.listId}
+	{#if variant === "day" && onBoard}
 		<span
 			data-no-dnd="true"
 			class="bucket-icon"
-			title="In Someday list"
+			title="Also on your Someday board"
 		>
 			<svg viewBox="0 0 16 16" fill="none" class="bucket-svg">
 				<path d="M3 5h10l-1 9H4L3 5z" fill="currentColor" opacity="0.2" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
@@ -268,15 +291,32 @@
 		/>
 	{:else}
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<span
-			data-no-dnd="true"
-			class="task-title"
-			class:line-through={task.isCompleted}
-			onclick={startEdit}
-		>
-			{@html renderedTitle}
-		</span>
+		{#snippet titleSpan()}
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<span
+				data-no-dnd="true"
+				class="task-title"
+				class:line-through={task.isCompleted}
+				onclick={startEdit}
+			>
+				{@html renderedTitle}
+			</span>
+		{/snippet}
+		{#if variant === "board" && dateChip && !task.isCompleted}
+			<!-- Board columns are narrow: the date goes on its own line under the title -->
+			<span class="title-stack">
+				{@render titleSpan()}
+				<span
+					data-no-dnd="true"
+					class="date-chip"
+					class:today={dateChip === "Today"}
+					class:overdue={dateChip === "Overdue"}
+					title="Scheduled for {task.dateTarget}"
+				>{dateChip}</span>
+			</span>
+		{:else}
+			{@render titleSpan()}
+		{/if}
 	{/if}
 
 	{#if task.recurrenceRule}
@@ -315,31 +355,39 @@
 						class="menu-item"
 						onclick={() => {
 							const tomorrow = task.dateTarget ? addDays(task.dateTarget, 1) : getToday();
-							moveTask(task.id, tomorrow, null, task.sortOrder);
+							scheduleTask(task.id, tomorrow, task.sortOrder);
 							closeMenu();
 						}}
 					>
 						Move to Tomorrow
 					</button>
 				{/if}
-				<button
-					class="menu-item"
-					onclick={() => {
-						moveTask(task.id, getToday(), null, task.sortOrder);
-						closeMenu();
-					}}
-				>
-					Move to Today
-				</button>
-				<button
-					class="menu-item"
-					onclick={() => {
-						moveToSomeday();
-						closeMenu();
-					}}
-				>
-					Move to Someday
-				</button>
+				{#if task.dateTarget !== getToday()}
+					<button
+						class="menu-item"
+						onclick={() => {
+							moveToToday();
+							closeMenu();
+						}}
+					>
+						{onBoard ? "Add to Today" : "Move to Today"}
+					</button>
+				{/if}
+				{#if task.dateTarget}
+					<button
+						class="menu-item"
+						onclick={() => {
+							moveToSomeday();
+							closeMenu();
+						}}
+					>
+						{onBoard
+							? task.dateTarget === getToday()
+								? "Remove from Today"
+								: "Remove date"
+							: "Move to Someday"}
+					</button>
+				{/if}
 				<button
 					class="menu-item delete-item"
 					onclick={() => {
@@ -616,6 +664,51 @@
 
 	.step-done {
 		opacity: 0.5;
+	}
+
+	/* Board columns are narrower than day columns */
+	.task-item.board {
+		gap: 8px;
+		padding: 10px 10px 10px 12px;
+	}
+
+	.title-stack {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 4px;
+	}
+
+	.title-stack .task-title {
+		width: 100%;
+	}
+
+	/* Date chip for board cards that are scheduled */
+	.date-chip {
+		flex-shrink: 0;
+		font-size: 11px;
+		font-weight: 600;
+		line-height: 1;
+		padding: 3px 7px;
+		border-radius: 10px;
+		color: var(--text-secondary);
+		background: var(--bg-hover);
+		border: 1px solid var(--border-light);
+		white-space: nowrap;
+	}
+
+	.date-chip.today {
+		color: #fff;
+		background: var(--accent);
+		border-color: transparent;
+	}
+
+	.date-chip.overdue {
+		color: var(--priority-must);
+		background: rgba(255, 71, 110, 0.1);
+		border-color: transparent;
 	}
 
 	/* Bucket icon for Someday items */

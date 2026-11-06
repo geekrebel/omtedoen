@@ -16,8 +16,9 @@ export interface Task {
 
 	// Scheduling
 	dateTarget: string | null; // ISO date YYYY-MM-DD, null for someday
-	listId: string | null; // FK to List, null for date-scheduled
-	sortOrder: number;
+	listId: string | null; // FK to List (Someday board list or Parking Lot); can coexist with dateTarget
+	sortOrder: number; // position within a day column
+	listSortOrder: number; // position within its board list (independent of sortOrder)
 
 	// ADHD features
 	priority: Priority;
@@ -81,6 +82,7 @@ export function createTask(overrides: Partial<Task> & { id: string; title: strin
 		dateTarget: null,
 		listId: null,
 		sortOrder: 0,
+		listSortOrder: 0,
 		priority: 'should',
 		focused: false,
 		colorLabel: 'none',

@@ -37,9 +37,16 @@ export function rolloverTasks(tasks: Task[], today: string): Task[] {
 	return modified;
 }
 
+/** A task that lives on a Someday board list (as opposed to the Parking Lot or no list). */
+export function isBoardCard(task: Task, parkingLotListId: string | null): boolean {
+	return task.listId !== null && task.listId !== parkingLotListId;
+}
+
 /**
  * Move tasks that have rolled over 3+ times to the parking lot.
- * Returns only the tasks that were parked.
+ * Board cards are never moved off their list: they just drop off the day view
+ * (date cleared, rollover reset) and stay where they are on the board.
+ * Returns only the tasks that were changed.
  */
 export function parkStaleTasks(tasks: Task[], parkingLotListId: string): Task[] {
 	const now = new Date().toISOString();
@@ -52,6 +59,20 @@ export function parkStaleTasks(tasks: Task[], parkingLotListId: string): Task[] 
 			!task.isCompleted &&
 			!task.deletedAt
 		) {
+			if (isBoardCard(task, parkingLotListId)) {
+				parked.push({
+					...task,
+					dateTarget: null,
+					rolloverCount: 0,
+					updatedAt: now,
+					fieldTimestamps: {
+						...task.fieldTimestamps,
+						dateTarget: now,
+						rolloverCount: now
+					}
+				});
+				continue;
+			}
 			const updated: Task = {
 				...task,
 				parked: true,
@@ -148,14 +169,31 @@ export function uncompleteTask(task: Task): Task {
 }
 
 /**
- * "Fresh start" — soft-delete all incomplete tasks.
- * Returns the tasks that were archived.
+ * "Fresh start" — soft-delete all incomplete tasks, except board cards:
+ * those are only taken off the day view (date cleared) and stay on their list.
  */
-export function freshStart(tasks: Task[]): Task[] {
+export function freshStart(
+	tasks: Task[],
+	parkingLotListId: string | null = null
+): { archived: Task[]; unscheduled: Task[] } {
 	const now = new Date().toISOString();
-	return tasks
-		.filter((t) => !t.isCompleted && !t.deletedAt)
-		.map((t) => ({
+	const archived: Task[] = [];
+	const unscheduled: Task[] = [];
+	for (const t of tasks) {
+		if (t.isCompleted || t.deletedAt) continue;
+		if (isBoardCard(t, parkingLotListId)) {
+			if (t.dateTarget !== null) {
+				unscheduled.push({
+					...t,
+					dateTarget: null,
+					rolloverCount: 0,
+					updatedAt: now,
+					fieldTimestamps: { ...t.fieldTimestamps, dateTarget: now, rolloverCount: now }
+				});
+			}
+			continue;
+		}
+		archived.push({
 			...t,
 			deletedAt: now,
 			updatedAt: now,
@@ -163,7 +201,9 @@ export function freshStart(tasks: Task[]): Task[] {
 				...t.fieldTimestamps,
 				deletedAt: now
 			}
-		}));
+		});
+	}
+	return { archived, unscheduled };
 }
 
 /**

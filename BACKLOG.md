@@ -17,6 +17,7 @@
 - [x] Add new app logo & icon
 - [x] Allow automatic updates (via GitHub Releases + tauri-plugin-updater)
 - [x] Commit LICENSE file and add contribution details
+- [x] Someday is now a Trello-style board: lists side by side, drag cards between lists, drag lists to reorder, rename inline. Cards added to Today stay on their list (Today chip), and deleting a list moves its cards to Someday instead of deleting them
 
 ## UX Improvements
 

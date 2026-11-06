@@ -17,6 +17,7 @@ interface TaskRow {
 	date_target: string | null;
 	list_id: string | null;
 	sort_order: number;
+	list_sort_order: number | null;
 	priority: string;
 	focused: number;
 	color_label: string;
@@ -64,6 +65,7 @@ function rowToTask(row: TaskRow): Task {
 		dateTarget: row.date_target,
 		listId: row.list_id,
 		sortOrder: row.sort_order,
+		listSortOrder: row.list_sort_order ?? row.sort_order,
 		priority: row.priority as Task['priority'],
 		focused: (row.focused ?? 0) === 1,
 		colorLabel: (row.color_label as Task['colorLabel']) ?? 'none',
@@ -163,6 +165,10 @@ export class SqliteStore implements TodoStore {
 		await db.execute(`ALTER TABLE tasks ADD COLUMN focused INTEGER NOT NULL DEFAULT 0`).catch(() => {});
 		await db.execute(`ALTER TABLE tasks ADD COLUMN color_label TEXT NOT NULL DEFAULT 'none'`).catch(() => {});
 		await db.execute(`ALTER TABLE lists ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+		// Migration: board position, separate from day-column position. Idempotent backfill
+		// (safe if the main and panel windows both run it).
+		await db.execute(`ALTER TABLE tasks ADD COLUMN list_sort_order REAL`).catch(() => {});
+		await db.execute(`UPDATE tasks SET list_sort_order = sort_order WHERE list_sort_order IS NULL`);
 
 		await db.execute(
 			`CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date_target) WHERE deleted_at IS NULL`
@@ -232,8 +238,8 @@ export class SqliteStore implements TodoStore {
 				date_target, list_id, sort_order, priority, focused, color_label,
 				parked, parked_at,
 				rollover_count, recurrence_rule, recurrence_next, steps,
-				created_at, updated_at, deleted_at, field_timestamps, device_id)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+				created_at, updated_at, deleted_at, field_timestamps, device_id, list_sort_order)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
 			ON CONFLICT(id) DO UPDATE SET
 				title=excluded.title, markdown_body=excluded.markdown_body,
 				is_completed=excluded.is_completed, completed_at=excluded.completed_at,
@@ -244,7 +250,8 @@ export class SqliteStore implements TodoStore {
 				rollover_count=excluded.rollover_count, recurrence_rule=excluded.recurrence_rule,
 				recurrence_next=excluded.recurrence_next, steps=excluded.steps,
 				updated_at=excluded.updated_at, deleted_at=excluded.deleted_at,
-				field_timestamps=excluded.field_timestamps, device_id=excluded.device_id`,
+				field_timestamps=excluded.field_timestamps, device_id=excluded.device_id,
+				list_sort_order=excluded.list_sort_order`,
 			[
 				task.id,
 				task.title,
@@ -267,7 +274,8 @@ export class SqliteStore implements TodoStore {
 				task.updatedAt,
 				task.deletedAt,
 				JSON.stringify(task.fieldTimestamps),
-				task.deviceId
+				task.deviceId,
+				task.listSortOrder
 			]
 		);
 	}
@@ -310,7 +318,8 @@ export class SqliteStore implements TodoStore {
 				color=excluded.color, is_parking_lot=excluded.is_parking_lot,
 				is_default=excluded.is_default,
 				updated_at=excluded.updated_at, deleted_at=excluded.deleted_at,
-				field_timestamps=excluded.field_timestamps, device_id=excluded.device_id`,
+				field_timestamps=excluded.field_timestamps, device_id=excluded.device_id,
+				list_sort_order=excluded.list_sort_order`,
 			[
 				list.id,
 				list.name,

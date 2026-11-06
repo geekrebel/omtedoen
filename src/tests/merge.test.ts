@@ -80,4 +80,27 @@ describe('mergeTask', () => {
 		const merged = mergeTask(local, remote);
 		expect(merged.title).toBe('Local');
 	});
+
+	it('merges board position, focus and colour label (previously dropped)', () => {
+		const local = createTask({
+			id: '1',
+			title: 't',
+			listSortOrder: 1,
+			focused: false,
+			colorLabel: 'none',
+			fieldTimestamps: { listSortOrder: '2026-03-05T14:00:00', focused: '2026-03-05T14:00:00', colorLabel: '2026-03-05T14:00:00' }
+		});
+		const remote = createTask({
+			id: '1',
+			title: 't',
+			listSortOrder: 7,
+			focused: true,
+			colorLabel: 'red',
+			fieldTimestamps: { listSortOrder: '2026-03-05T15:00:00', focused: '2026-03-05T15:00:00', colorLabel: '2026-03-05T15:00:00' }
+		});
+		const merged = mergeTask(local, remote);
+		expect(merged.listSortOrder).toBe(7);
+		expect(merged.focused).toBe(true);
+		expect(merged.colorLabel).toBe('red');
+	});
 });
