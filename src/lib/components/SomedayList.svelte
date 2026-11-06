@@ -386,4 +386,10 @@
 		overflow-y: auto;
 		padding: 2px;
 	}
+
+	/* When the window is short the list scrolls; cards must keep their full
+	   height instead of being squashed (which made long titles overlap). */
+	.list-tasks > :global(*) {
+		flex-shrink: 0;
+	}
 </style>
