@@ -325,8 +325,7 @@ export class SqliteStore implements TodoStore {
 				color=excluded.color, is_parking_lot=excluded.is_parking_lot,
 				is_default=excluded.is_default,
 				updated_at=excluded.updated_at, deleted_at=excluded.deleted_at,
-				field_timestamps=excluded.field_timestamps, device_id=excluded.device_id,
-				list_sort_order=excluded.list_sort_order`,
+				field_timestamps=excluded.field_timestamps, device_id=excluded.device_id`,
 			[
 				list.id,
 				list.name,
