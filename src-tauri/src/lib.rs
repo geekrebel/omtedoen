@@ -1,4 +1,27 @@
+use tauri::menu::{Menu, MenuItem, MenuItemKind, PredefinedMenuItem};
 use tauri::{Emitter, Manager};
+
+/// Standard macOS app menu plus "Settings…" (⌘,) under About, like native Mac apps.
+/// Picking it brings the main window forward and tells it to open the Settings view.
+fn build_app_menu(app: &tauri::AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+    let menu = Menu::default(app)?;
+    let settings = MenuItem::with_id(app, "settings", "Settings…", true, Some("CmdOrCtrl+,"))?;
+    // On macOS the first submenu is the app ("OmTeDoen") menu: About, separator, Services…
+    if let Some(MenuItemKind::Submenu(app_menu)) = menu.items()?.into_iter().next() {
+        app_menu.insert(&settings, 2)?;
+        app_menu.insert(&PredefinedMenuItem::separator(app)?, 3)?;
+    }
+    Ok(menu)
+}
+
+fn open_settings(app: &tauri::AppHandle) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.show();
+        let _ = win.unminimize();
+        let _ = win.set_focus();
+    }
+    let _ = app.emit_to("main", "open-settings", ());
+}
 
 /// Watch the global cursor and tell the panel window when the pointer is over
 /// it. macOS does not deliver mouseMoved events to unfocused windows, so the
@@ -52,7 +75,13 @@ pub fn run() {
                 )?;
             }
             spawn_panel_hover_watcher(app.handle().clone());
+            app.set_menu(build_app_menu(app.handle())?)?;
             Ok(())
+        })
+        .on_menu_event(|app, event| {
+            if event.id() == "settings" {
+                open_settings(app);
+            }
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

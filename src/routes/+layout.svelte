@@ -54,6 +54,14 @@
 
 		if (isPanel) return;
 
+		// OmTeDoen menu → Settings… (⌘,) is handled natively and forwarded here
+		if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+			try {
+				const { listen } = await import("@tauri-apps/api/event");
+				await listen("open-settings", () => setCurrentView("settings"));
+			} catch {}
+		}
+
 		// Wait for Svelte to mount components now that ready=true
 		await tick();
 
@@ -173,6 +181,12 @@
 		if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
 			e.preventDefault();
 			handleToggleFocusMode();
+		}
+		// Cmd+, — Settings (in the desktop app the menu accelerator handles this;
+		// this covers the browser/dev build)
+		if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === ",") {
+			e.preventDefault();
+			setCurrentView("settings");
 		}
 		// Cmd+1-4 — view switching
 		if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
