@@ -20,30 +20,29 @@
 
 ## UX Improvements
 
-- [ ] change placeholder text in capture bar to inform user of 'q' shortcut
-- [ ] remove any references to using !must, !should !want in quick capture - they don't do anything at this stage. 
-- [ ] remove 'add a task' text fields everywhere, as quick capture supercedes it 
+- [x] change placeholder text in capture bar to inform user of 'q' shortcut ("Add a task... (or press Q for full editor)")
+- [ ] decide on !must / !should / !want in quick capture — they DO work (parsed in `app.svelte.ts`), so either document them properly or remove them
+- [ ] remove 'add a task' text fields everywhere, as quick capture supercedes it (day columns done; still in Month view popover and Someday lists via `TaskInput`)
 - [x] Add keyboard shortcut for quick capture (press q)
 - [x] Remove the title saying "Focus" and the redundant "Today" label
 - [x] Rethink Quick Capture and NLP — currently NLP only runs in Quick Capture, not in day column inputs. Consider whether NLP should be more broadly available, how to make the parsing more transparent (e.g. better preview/feedback), and whether Quick Capture should support more advanced input (steps, priority, list assignment) in a single flow.
-- [ ] Make settings button bigger (currently hard to hit in sidebar)
+- [ ] Make settings button bigger — bumped to 44px min-height (13 Mar), but still feels tiny (noted 16 Mar)
 - [x] Add keyboard shortcut to move Someday items back to today
-- [ ] Add 3-dot menu on cards with quick actions (move to tomorrow, move to someday, etc.) as an alternative to keyboard shortcuts
+- [x] Add 3-dot menu on cards with quick actions (Move to Tomorrow / Today / Someday, Delete)
 - [ ] Allow multiple cards to be selected (for bulk actions like move, delete, etc.)
 - [ ] Add Gmail-style keyboard shortcuts: j/k to navigate up/down, x to select, # to delete, etc.
-- [ ] Show counter/badge with number of completed tasks in the main view
-- [ ] make the purple dropdown arrow for the Parking Lot bigger! 
-- [ ] the settings button is still tiny
+- [ ] Show counter/badge with number of completed tasks in the main view (Month view already shows per-day ✓ counts)
+- [ ] make the purple dropdown arrow for the Parking Lot bigger!
 ## Design
 
-- [ ] Fix the icon for the Someday tab in the sidebar. should resember a bucket or a basket or a container of some form.
-- [ ] Fix the icon for the Calendar view. Use a typical calendar icon. 
-- [ ] keep the Quick Capture bar visible when in calendar view
-- [ ] find a better way  to go into Focus mode. The lightning button is too small and in the wrong place. 
+- [x] Fix the icon for the Someday tab in the sidebar. should resember a bucket or a basket or a container of some form.
+- [x] Fix the icon for the Calendar view. Use a typical calendar icon.
+- [x] keep the Quick Capture bar visible when in calendar view
+- [ ] find a better way  to go into Focus mode. The lightning button is too small and in the wrong place. (currently a "⚡ Focus" button in the quick-add bar, plus ⌘⇧F)
 
 ## System
 
-- [ ] Build a way to test that UX is working as intended (e.g. end-to-end/integration tests for UI flows)
+- [ ] Build a way to test that UX is working as intended (e.g. end-to-end/integration tests for UI flows) — only unit tests so far (task engine, merge, recurrence, date parser)
 
 
 ## Licence
