@@ -205,6 +205,7 @@
 <div
 	class="task-item"
 	class:board={variant === "board"}
+	class:menu-open={showMenu}
 	class:completed={task.isCompleted}
 	class:celebrate={justCompleted}
 	class:parked={task.parked}
@@ -462,6 +463,12 @@
 
 	.task-item:hover::before {
 		opacity: 1;
+	}
+
+	/* A hovered card is its own stacking context (transform), which traps the
+	   menu's z-index inside it; lift the whole card above its neighbours instead. */
+	.task-item.menu-open {
+		z-index: 50;
 	}
 
 	.task-item.completed {
