@@ -2,6 +2,7 @@
 	import type { Task, ColorLabel } from "$lib/core/types.js";
 	import { renderMarkdown } from "$lib/core/markdown.js";
 	import TrashIcon from "./TrashIcon.svelte";
+	import { tick } from "svelte";
 	import {
 		toggleTask,
 		updateTask,
@@ -104,9 +105,46 @@
 		setTaskColorLabel(task.id, label);
 	}
 
+	// Open the ⋯ menu upward when it doesn't fit below the card, either inside a
+	// scrolling list (board columns clip their overflow) or at the window edge.
+	let menuUp = $state(false);
+
+	function clipBounds(el: HTMLElement): { top: number; bottom: number } {
+		let top = 0;
+		let bottom = window.innerHeight;
+		for (let p = el.parentElement; p; p = p.parentElement) {
+			const oy = getComputedStyle(p).overflowY;
+			if (oy === "auto" || oy === "scroll" || oy === "hidden") {
+				const r = p.getBoundingClientRect();
+				top = Math.max(top, r.top);
+				bottom = Math.min(bottom, r.bottom);
+				break;
+			}
+		}
+		return { top, bottom };
+	}
+
+	function placeMenu() {
+		const menu = menuEl?.querySelector<HTMLElement>(".task-menu");
+		if (!menuEl || !menu) return;
+		const btn = menuEl.getBoundingClientRect();
+		const { top, bottom } = clipBounds(menuEl);
+		const needed = menu.offsetHeight + 4;
+		const below = bottom - btn.bottom;
+		const above = btn.top - top;
+		menuUp = needed > below && above > below;
+	}
+
 	function handleMenuClick(e: KeyboardEvent | Event) {
 		e.stopPropagation();
-		showMenu = !showMenu;
+		if (showMenu) {
+			showMenu = false;
+			return;
+		}
+		menuUp = false;
+		showMenu = true;
+		// Measure once the menu is in the DOM, before it paints
+		tick().then(placeMenu);
 	}
 
 	function closeMenu() {
@@ -351,7 +389,7 @@
 		</button>
 
 		{#if showMenu}
-			<div class="task-menu">
+			<div class="task-menu" class:up={menuUp}>
 				{#if task.dateTarget}
 					<button
 						class="menu-item"
@@ -807,6 +845,25 @@
 		min-width: 160px;
 		overflow: hidden;
 		animation: menuIn 0.15s ease-out;
+	}
+
+	.task-menu.up {
+		top: auto;
+		bottom: 100%;
+		margin-top: 0;
+		margin-bottom: 4px;
+		animation-name: menuInUp;
+	}
+
+	@keyframes menuInUp {
+		from {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	@keyframes menuIn {
