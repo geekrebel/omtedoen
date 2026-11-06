@@ -13,6 +13,7 @@
 		saveSetting,
 		getParkedTasks,
 		getSomedayLists,
+		getTrashTasks,
 		undo,
 		startCrossWindowSync,
 	} from "$lib/stores/app.svelte.js";
@@ -20,6 +21,8 @@
 	import MonthView from "$lib/components/MonthView.svelte";
 	import SomedayView from "$lib/components/SomedayView.svelte";
 	import SettingsView from "$lib/components/SettingsView.svelte";
+	import TrashView from "$lib/components/TrashView.svelte";
+	import TrashIcon from "$lib/components/TrashIcon.svelte";
 	import ScratchpadView from "$lib/components/ScratchpadView.svelte";
 	import ParkingLot from "$lib/components/ParkingLot.svelte";
 	import CommandPalette from "$lib/components/CommandPalette.svelte";
@@ -41,6 +44,7 @@
 	let focusMode = $derived(isFocusMode());
 	let parkedTasks = $derived(getParkedTasks());
 	let somedayLists = $derived(getSomedayLists());
+	let trashCount = $derived(getTrashTasks().length);
 
 	// The /panel route is a separate slim window — it gets store init and
 	// cross-window sync, but none of the app shell, shortcuts, or updater UI
@@ -236,6 +240,12 @@
 			</div>
 
 			<div class="sidebar-nav">
+				<button class="nav-item quick-add-item" onclick={() => (captureOpen = true)}>
+					<span class="nav-icon">&#x26A1;</span>
+					<span class="nav-label">Quick Add</span>
+					<kbd class="nav-kbd">Q</kbd>
+				</button>
+
 				<button
 					class="nav-item"
 					class:active={view === "focus"}
@@ -326,18 +336,19 @@
 				</div>
 			{/if}
 
+			<!-- Settings now lives in the OmTeDoen menu (⌘,) -->
 			<div class="sidebar-footer">
-				<button class="nav-item" onclick={() => (captureOpen = true)}>
-					<span class="nav-icon">&#x26A1;</span>
-					<span class="nav-label">Quick Add</span>
-				</button>
 				<button
-					class="nav-item settings-item"
-					class:active={view === "settings"}
-					onclick={() => setCurrentView("settings")}
+					class="nav-item trash-item"
+					class:active={view === "trash"}
+					onclick={() => setCurrentView("trash")}
+					title="Trash"
 				>
-					<span class="nav-icon">&#x2699;</span>
-					<span class="nav-label">Settings</span>
+					<span class="nav-icon"><TrashIcon /></span>
+					<span class="nav-label">Trash</span>
+					{#if trashCount > 0}
+						<span class="trash-count">{trashCount}</span>
+					{/if}
 				</button>
 			</div>
 		</nav>
@@ -377,6 +388,8 @@
 				<ScratchpadView />
 			{:else if view === "settings"}
 				<SettingsView />
+			{:else if view === "trash"}
+				<TrashView />
 			{/if}
 		</main>
 	</div>
@@ -588,7 +601,7 @@
 		color: var(--text-secondary);
 	}
 
-	.settings-item {
+	.trash-item {
 		min-height: 44px;
 		padding: 10px 12px;
 	}
@@ -625,6 +638,19 @@
 		border-radius: 50%;
 		flex-shrink: 0;
 		box-shadow: 0 0 8px currentColor;
+	}
+
+	.trash-count {
+		margin-left: auto;
+		font-size: 11px;
+		font-weight: 600;
+		color: var(--text-muted);
+		opacity: 0;
+		transition: opacity 0.15s ease;
+	}
+
+	.sidebar.expanded .trash-count {
+		opacity: 1;
 	}
 
 	.sidebar-footer {

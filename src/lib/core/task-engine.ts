@@ -207,6 +207,43 @@ export function freshStart(
 }
 
 /**
+ * Bring a task back from the Trash so it is visible again:
+ * - its list was deleted (or never existed) → the default Someday list
+ * - it is unfinished and dated in the past → today (it would otherwise be invisible
+ *   until the next rollover)
+ */
+export function restoreTask(
+	task: Task,
+	opts: { today: string; liveListIds: Set<string>; defaultListId: string }
+): Task {
+	const now = new Date().toISOString();
+	const ts: Record<string, string> = { deletedAt: now };
+	let { listId, dateTarget, parked, parkedAt } = task;
+	if (listId !== null && !opts.liveListIds.has(listId)) {
+		listId = opts.defaultListId;
+		parked = false;
+		parkedAt = null;
+		ts.listId = now;
+		ts.parked = now;
+		ts.parkedAt = now;
+	}
+	if (!task.isCompleted && dateTarget !== null && isBefore(dateTarget, opts.today)) {
+		dateTarget = opts.today;
+		ts.dateTarget = now;
+	}
+	return {
+		...task,
+		listId,
+		dateTarget,
+		parked,
+		parkedAt,
+		deletedAt: null,
+		updatedAt: now,
+		fieldTimestamps: { ...task.fieldTimestamps, ...ts }
+	};
+}
+
+/**
  * Calculate the next sort order for appending to a list.
  * Uses max + 1 strategy for simplicity; fractional indexing is used for inserts.
  */

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Task, ColorLabel } from "$lib/core/types.js";
 	import { renderMarkdown } from "$lib/core/markdown.js";
+	import TrashIcon from "./TrashIcon.svelte";
 	import {
 		toggleTask,
 		updateTask,
@@ -406,9 +407,10 @@
 		data-no-dnd="true"
 		class="delete-btn"
 		onclick={handleDelete}
-		aria-label="Delete task"
+		aria-label="Move to Trash"
+		title="Move to Trash"
 	>
-		&times;
+		<TrashIcon size={15} />
 	</button>
 </div>
 

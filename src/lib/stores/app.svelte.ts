@@ -11,6 +11,7 @@ import {
 	uncompleteTask as uncompleteTaskEngine,
 	freshStart as freshStartEngine,
 	isBoardCard,
+	restoreTask as restoreTaskEngine,
 	nextSortOrder,
 	sortOrderBetween
 } from '$lib/core/task-engine.js';
@@ -24,7 +25,9 @@ let allTasks: Task[] = $state([]);
 let allLists: List[] = $state([]);
 let parkingLotId: string = $state('');
 let defaultSomedayId: string = $state('');
-let currentView: 'focus' | 'month' | 'someday' | 'scratchpad' | 'settings' = $state('focus');
+export type View = 'focus' | 'month' | 'someday' | 'scratchpad' | 'settings' | 'trash';
+let currentView: View = $state('focus');
+let trashTasks: Task[] = $state([]);
 let focusMode: boolean = $state(false);
 
 let monthOffset: number = $state(0); // 0 = current month, -1 = last month, etc.
@@ -221,7 +224,7 @@ export function getStoreType(): StoreType {
 	return storeType;
 }
 
-export function getCurrentView(): 'focus' | 'month' | 'someday' | 'scratchpad' | 'settings' {
+export function getCurrentView(): View {
 	return currentView;
 }
 
@@ -307,6 +310,7 @@ export async function startCrossWindowSync(): Promise<void> {
 			if (e.payload?.source === myLabel || !store) return;
 			allTasks = await store.getAllTasks();
 			allLists = await store.getAllLists();
+			await refreshTrash();
 		});
 	} catch {
 		syncStarted = false;
@@ -374,6 +378,8 @@ export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
 	// Load settings
 	const fm = await store.getSetting('focusMode');
 	focusMode = fm === 'true';
+
+	await refreshTrash();
 
 
 }
@@ -495,6 +501,7 @@ export async function deleteTask(id: string): Promise<void> {
 	}
 	await store.softDeleteTask(id);
 	allTasks = allTasks.filter((t) => t.id !== id);
+	await refreshTrash();
 }
 
 export async function undo(): Promise<boolean> {
@@ -502,9 +509,12 @@ export async function undo(): Promise<boolean> {
 	const entry = undoStack[undoStack.length - 1];
 	undoStack = undoStack.slice(0, -1);
 	if (entry.type === 'delete') {
+		// Already restored from the Trash? Then there is nothing to undo.
+		if (allTasks.some((t) => t.id === entry.task.id)) return true;
 		const restored = { ...entry.task, deletedAt: null, updatedAt: new Date().toISOString() };
 		await store.upsertTask(restored);
 		allTasks = [...allTasks, restored];
+		await refreshTrash();
 	}
 	return true;
 }
@@ -659,6 +669,32 @@ export async function deleteList(id: string): Promise<number> {
 	return cards.length;
 }
 
+// Trash
+
+export function getTrashTasks(): Task[] {
+	return trashTasks;
+}
+
+export async function refreshTrash(): Promise<void> {
+	if (!store) return;
+	trashTasks = await store.getDeletedTasks();
+}
+
+/** Put a deleted task back where it was (or somewhere visible if that place is gone). */
+export async function restoreFromTrash(id: string): Promise<void> {
+	if (!store) throw new Error('Store not initialized');
+	const task = trashTasks.find((t) => t.id === id);
+	if (!task) return;
+	const restored = restoreTaskEngine(task, {
+		today,
+		liveListIds: new Set(allLists.filter((l) => !l.deletedAt).map((l) => l.id)),
+		defaultListId: defaultSomedayId
+	});
+	await store.upsertTask(restored);
+	allTasks = [...allTasks.filter((t) => t.id !== id), restored];
+	trashTasks = trashTasks.filter((t) => t.id !== id);
+}
+
 export function exportData(): string {
 	const data = {
 		version: 1,
@@ -678,6 +714,7 @@ export async function doFreshStart(): Promise<number> {
 	allTasks = allTasks
 		.filter((t) => !archivedIds.has(t.id))
 		.map((t) => unscheduled.find((u) => u.id === t.id) || t);
+	await refreshTrash();
 	return archived.length;
 }
 

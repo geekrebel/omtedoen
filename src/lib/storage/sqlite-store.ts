@@ -227,6 +227,13 @@ export class SqliteStore implements TodoStore {
 		return rows.map(rowToTask);
 	}
 
+	async getDeletedTasks(): Promise<Task[]> {
+		const rows = await this.db!.select<TaskRow[]>(
+			'SELECT * FROM tasks WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC'
+		);
+		return rows.map(rowToTask);
+	}
+
 	async getTask(id: string): Promise<Task | null> {
 		const rows = await this.db!.select<TaskRow[]>('SELECT * FROM tasks WHERE id = $1', [id]);
 		return rows.length > 0 ? rowToTask(rows[0]) : null;

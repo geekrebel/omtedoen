@@ -10,6 +10,8 @@ export interface TodoStore {
 	getTasksByDateRange(startDate: string, endDate: string): Promise<Task[]>;
 	getTasksByList(listId: string): Promise<Task[]>;
 	getParkedTasks(): Promise<Task[]>;
+	/** Soft-deleted tasks (the Trash), most recently deleted first */
+	getDeletedTasks(): Promise<Task[]>;
 	getTask(id: string): Promise<Task | null>;
 	upsertTask(task: Task): Promise<void>;
 	upsertTasks(tasks: Task[]): Promise<void>;

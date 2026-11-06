@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rolloverTasks, parkStaleTasks, completeTask, freshStart, nextSortOrder, sortOrderBetween, isBoardCard } from '$lib/core/task-engine.js';
+import { rolloverTasks, parkStaleTasks, completeTask, freshStart, nextSortOrder, sortOrderBetween, isBoardCard, restoreTask } from '$lib/core/task-engine.js';
 import { createTask } from '$lib/core/types.js';
 
 describe('rolloverTasks', () => {
@@ -171,5 +171,29 @@ describe('rolloverTasks with board cards', () => {
 		const [rolled] = rolloverTasks(tasks, '2026-03-05');
 		expect(rolled.dateTarget).toBe('2026-03-05');
 		expect(rolled.listId).toBe('board-a');
+	});
+});
+
+describe('restoreTask', () => {
+	const opts = { today: '2026-03-10', liveListIds: new Set(['board-a', 'pl']), defaultListId: 'someday' };
+
+	it('clears deletedAt and keeps the card where it was', () => {
+		const t = createTask({ id: '1', title: 'a', listId: 'board-a', listSortOrder: 3, deletedAt: '2026-03-09T10:00:00Z' });
+		const r = restoreTask(t, opts);
+		expect(r.deletedAt).toBeNull();
+		expect(r.listId).toBe('board-a');
+		expect(r.listSortOrder).toBe(3);
+	});
+
+	it('moves a card whose list was deleted to the default list', () => {
+		const t = createTask({ id: '1', title: 'a', listId: 'gone', deletedAt: 'x' });
+		expect(restoreTask(t, opts).listId).toBe('someday');
+	});
+
+	it('brings an unfinished past-dated task to today, but leaves done ones alone', () => {
+		const open = createTask({ id: '1', title: 'a', dateTarget: '2026-03-01', deletedAt: 'x' });
+		const done = createTask({ id: '2', title: 'b', dateTarget: '2026-03-01', isCompleted: true, completedAt: 'x', deletedAt: 'x' });
+		expect(restoreTask(open, opts).dateTarget).toBe('2026-03-10');
+		expect(restoreTask(done, opts).dateTarget).toBe('2026-03-01');
 	});
 });

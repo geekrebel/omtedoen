@@ -56,6 +56,12 @@ export class MemoryStore implements TodoStore {
 			.sort((a, b) => a.sortOrder - b.sortOrder);
 	}
 
+	async getDeletedTasks(): Promise<Task[]> {
+		return Array.from(this.tasks.values())
+			.filter((t) => t.deletedAt)
+			.sort((a, b) => (b.deletedAt! > a.deletedAt! ? 1 : -1));
+	}
+
 	async getTask(id: string): Promise<Task | null> {
 		return this.tasks.get(id) ?? null;
 	}
