@@ -127,14 +127,39 @@ export function createNextRecurrence(completedTask: Task, newId: string): Task |
 }
 
 /**
+ * The id of the instance a recurring task spawns when it is completed.
+ * It is derived from the parent's id, so completing, un-completing and
+ * completing again re-uses the same instance instead of making a second one.
+ */
+export function recurrenceChildId(parentId: string): string {
+	// Four seeded FNV-1a passes → 128 bits of hex. Not cryptographic, just stable.
+	let out = 'r';
+	for (const seed of [0x811c9dc5, 0x01000193, 0x9e3779b9, 0x85ebca6b]) {
+		let h = seed >>> 0;
+		for (let i = 0; i < parentId.length; i++) {
+			h ^= parentId.charCodeAt(i);
+			h = Math.imul(h, 0x01000193) >>> 0;
+		}
+		out += h.toString(16).padStart(8, '0');
+	}
+	return out;
+}
+
+/**
  * Complete a task. Returns the updated task and optionally a new recurring instance.
+ *
+ * A recurring board card hands its place on the board to the next instance:
+ * the completed copy leaves the list (and keeps a date, so it shows under Done),
+ * otherwise a daily card would pile up one finished copy per day.
  */
 export function completeTask(
 	task: Task,
-	newRecurrenceId: string
+	newRecurrenceId: string = recurrenceChildId(task.id),
+	parkingLotListId: string | null = null,
+	today: string = todayISO()
 ): { completed: Task; nextInstance: Task | null } {
 	const now = new Date().toISOString();
-	const completed: Task = {
+	let completed: Task = {
 		...task,
 		isCompleted: true,
 		completedAt: now,
@@ -147,6 +172,14 @@ export function completeTask(
 	};
 
 	const nextInstance = createNextRecurrence(completed, newRecurrenceId);
+	if (nextInstance && isBoardCard(task, parkingLotListId)) {
+		completed = {
+			...completed,
+			listId: null,
+			dateTarget: completed.dateTarget ?? today,
+			fieldTimestamps: { ...completed.fieldTimestamps, listId: now, dateTarget: now }
+		};
+	}
 	return { completed, nextInstance };
 }
 

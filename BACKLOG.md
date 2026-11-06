@@ -18,6 +18,8 @@
 - [x] Allow automatic updates (via GitHub Releases + tauri-plugin-updater)
 - [x] Commit LICENSE file and add contribution details
 - [x] Someday is now a Trello-style board: lists side by side, drag cards between lists, drag lists to reorder, rename inline. Cards added to Today stay on their list (Today chip), and deleting a list moves its cards to Someday instead of deleting them
+- [x] Trash view with restore (deleted cards are no longer lost); Settings… in the app menu (⌘,)
+- [x] 0.5.12 review fixes: Today reorder keeps order and rollover count; recurring tasks no longer duplicate or skip their first day; Quick Add ignores past dates and words like "sun"/"sat", reads 10/11 day-first; typing in Quick Add never hits a card; palette keys handled once and Fresh Start confirms; card shortcuts ignore ⌘/repeat; one ⋯ menu at a time (Escape closes); links in titles open in the browser (http/mailto only)
 
 ## UX Improvements
 

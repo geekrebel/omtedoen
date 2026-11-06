@@ -122,10 +122,7 @@
 			<button
 				class="toggle-btn"
 				class:active={focusModeActive}
-				onclick={() => {
-					toggleFocusMode();
-					saveSetting("focusMode", String(isFocusMode()));
-				}}
+				onclick={() => toggleFocusMode()}
 				role="switch"
 				aria-checked={focusModeActive}
 				aria-label="Toggle Focus Mode"

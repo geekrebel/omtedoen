@@ -2,9 +2,10 @@
 	import {
 		setCurrentView,
 		toggleFocusMode,
-		doFreshStart,
+		setFocusMode,
 		isFocusMode,
-		saveSetting,
+		doFreshStart,
+		type View,
 	} from "$lib/stores/app.svelte.js";
 
 	interface Props {
@@ -17,63 +18,52 @@
 	let query = $state("");
 	let selectedIndex = $state(0);
 	let inputEl: HTMLInputElement | undefined = $state();
+	/** Fresh Start moves tasks to the Trash, so it needs a second Enter/click */
+	let confirmFreshStart = $state(false);
 
 	interface Command {
+		id: string;
 		label: string;
 		description: string;
 		action: () => void;
 	}
 
+	// Focus mode hides the sidebar: going to another view leaves it
+	function go(view: View) {
+		if (isFocusMode() && view !== "focus") setFocusMode(false);
+		setCurrentView(view);
+		onclose();
+	}
+
 	const commands: Command[] = [
+		{ id: "focus", label: "Focus View", description: "Show only today", action: () => go("focus") },
+		{ id: "month", label: "Month View", description: "See the full month", action: () => go("month") },
+		{ id: "someday", label: "Someday Lists", description: "Browse lists", action: () => go("someday") },
 		{
-			label: "Focus View",
-			description: "Show only today",
-			action: () => {
-				setCurrentView("focus");
-				onclose();
-			},
-		},
-		{
-			label: "Month View",
-			description: "See the full month",
-			action: () => {
-				setCurrentView("month");
-				onclose();
-			},
-		},
-		{
-			label: "Someday Lists",
-			description: "Browse lists",
-			action: () => {
-				setCurrentView("someday");
-				onclose();
-			},
-		},
-		{
+			id: "focus-mode",
 			label: "Toggle Focus Mode",
 			description: "Show only tasks with lightning bolt",
 			action: () => {
 				toggleFocusMode();
-				saveSetting("focusMode", String(isFocusMode()));
 				onclose();
 			},
 		},
 		{
+			id: "fresh-start",
 			label: "Fresh Start",
 			description: "Archive everything and begin anew",
 			action: async () => {
-				const count = await doFreshStart();
+				if (!confirmFreshStart) {
+					confirmFreshStart = true;
+					return;
+				}
+				confirmFreshStart = false;
+				await doFreshStart();
 				onclose();
 			},
 		},
-		{
-			label: "Settings",
-			description: "App settings",
-			action: () => {
-				setCurrentView("settings");
-				onclose();
-			},
-		},
+		{ id: "trash", label: "Trash", description: "Restore deleted cards", action: () => go("trash") },
+		{ id: "settings", label: "Settings", description: "App settings", action: () => go("settings") },
 	];
 
 	let filtered = $derived(
@@ -88,16 +78,35 @@
 			: commands,
 	);
 
+	// Keep the selection on a real row when the filter shrinks the list,
+	// and drop a pending Fresh Start confirmation when the query changes
+	$effect(() => {
+		query;
+		confirmFreshStart = false;
+	});
+	$effect(() => {
+		if (selectedIndex > filtered.length - 1) {
+			selectedIndex = Math.max(0, filtered.length - 1);
+		}
+	});
+
+	function select(i: number) {
+		if (i !== selectedIndex) confirmFreshStart = false;
+		selectedIndex = i;
+	}
+
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === "Escape") {
+			e.preventDefault();
 			onclose();
 		} else if (e.key === "ArrowDown") {
 			e.preventDefault();
-			selectedIndex = Math.min(selectedIndex + 1, filtered.length - 1);
+			select(Math.min(selectedIndex + 1, filtered.length - 1));
 		} else if (e.key === "ArrowUp") {
 			e.preventDefault();
-			selectedIndex = Math.max(selectedIndex - 1, 0);
-		} else if (e.key === "Enter" && filtered.length > 0) {
+			select(Math.max(selectedIndex - 1, 0));
+		} else if (e.key === "Enter" && !e.repeat && filtered[selectedIndex]) {
+			e.preventDefault();
 			filtered[selectedIndex].action();
 		}
 	}
@@ -106,18 +115,14 @@
 		if (open) {
 			query = "";
 			selectedIndex = 0;
+			confirmFreshStart = false;
 			requestAnimationFrame(() => inputEl?.focus());
 		}
 	});
 </script>
 
 {#if open}
-	<div
-		class="overlay"
-		onclick={onclose}
-		onkeydown={handleKeydown}
-		role="presentation"
-	>
+	<div class="overlay" onclick={onclose} role="presentation">
 		<div
 			class="palette"
 			onclick={(e) => e.stopPropagation()}
@@ -132,15 +137,22 @@
 				type="text"
 			/>
 			<div class="results">
-				{#each filtered as cmd, i}
+				{#each filtered as cmd, i (cmd.id)}
+					{@const confirming = cmd.id === "fresh-start" && confirmFreshStart}
 					<button
 						class="result-item"
 						class:selected={i === selectedIndex}
-						onclick={cmd.action}
-						onmouseenter={() => (selectedIndex = i)}
+						class:danger={confirming}
+						onclick={() => {
+							select(i);
+							cmd.action();
+						}}
+						onmouseenter={() => select(i)}
 					>
-						<span class="result-label">{cmd.label}</span>
-						<span class="result-desc">{cmd.description}</span>
+						<span class="result-label">{confirming ? "Fresh Start — are you sure?" : cmd.label}</span>
+						<span class="result-desc">{confirming
+								? "Unfinished tasks go to the Trash. Press Enter or click again to confirm."
+								: cmd.description}</span>
 					</button>
 				{/each}
 				{#if filtered.length === 0}
@@ -260,6 +272,15 @@
 	.result-desc {
 		font-size: 13px;
 		color: var(--text-muted);
+	}
+
+	.result-item.danger {
+		background: rgba(239, 68, 68, 0.12);
+		border-left-color: #ef4444;
+	}
+
+	.result-item.danger .result-label {
+		color: #dc2626;
 	}
 
 	.no-results {

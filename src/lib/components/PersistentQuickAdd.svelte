@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { addTask } from "$lib/stores/app.svelte.js";
 	import { todayISO, dayLabel, addDays } from "$lib/utils/dates.js";
-	import { extractRecurrence, nextOccurrence } from "$lib/core/recurrence.js";
+	import { extractRecurrence, firstOccurrence } from "$lib/core/recurrence.js";
 	import { extractDateTarget } from "$lib/core/date-parser.js";
 
 	interface Props {
@@ -15,7 +15,6 @@
 	let value = $state("");
 	let inputEl: HTMLInputElement | undefined = $state();
 	let isFocused = $state(false);
-	let taskHovered = $state(false);
 
 	// Live preview of what will happen
 	let preview = $derived(() => {
@@ -28,8 +27,7 @@
 
 		let targetDate: string;
 		if (rule) {
-			const next = nextOccurrence(rule, parsedDate || todayISO());
-			targetDate = next ? dayLabel(next) : dayLabel(parsedDate || todayISO());
+			targetDate = dayLabel(firstOccurrence(rule, parsedDate || todayISO()));
 		} else {
 			targetDate = dayLabel(parsedDate!);
 		}
@@ -64,29 +62,13 @@
 		}
 	}
 
-	function handleTaskHoverChange(isHovered: boolean) {
-		taskHovered = isHovered;
-		if (onTaskHoverChange) {
-			onTaskHoverChange(isHovered);
-		}
-
-		// Blur input when task is hovered, preserve value
-		if (isHovered && isFocused) {
-			inputEl?.blur();
-		}
-	}
-
-	// Expose for parent to call
+	// The input used to blur while the pointer was over a card (so card
+	// shortcuts worked), which sent typed letters to the card instead: "t"
+	// moved it, Backspace deleted it. Typing now always stays in the input;
+	// press Escape to leave it and use card shortcuts.
 	export function notifyTaskHovered(isHovered: boolean) {
-		handleTaskHoverChange(isHovered);
+		onTaskHoverChange?.(isHovered);
 	}
-
-	// Re-focus if task hover ends and input had focus before
-	$effect(() => {
-		if (!taskHovered && isFocused && document.activeElement !== inputEl) {
-			requestAnimationFrame(() => inputEl?.focus());
-		}
-	});
 
 	function handleFocusToggle() {
 		onToggleFocus?.();

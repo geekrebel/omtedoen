@@ -8,6 +8,7 @@
 		getToday,
 	} from "$lib/stores/app.svelte.js";
 	import { addDays } from "$lib/utils/dates.js";
+	import { stripMarkdown } from "$lib/core/markdown.js";
 	import { onMount } from "svelte";
 
 	const SHOW_MAX = 200;
@@ -78,7 +79,7 @@
 						{#if task.isCompleted}✓{/if}
 					</span>
 					<div class="text">
-						<span class="title" class:done={task.isCompleted}>{task.title}</span>
+						<span class="title" class:done={task.isCompleted}>{stripMarkdown(task.title)}</span>
 						<span class="meta">
 							From {where(task)} · deleted {ago(task.deletedAt)}
 						</span>

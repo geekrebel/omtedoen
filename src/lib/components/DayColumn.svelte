@@ -2,6 +2,7 @@
 	import TaskItem from "./TaskItem.svelte";
 	import {
 		setTaskStatus,
+		setTaskSortOrder,
 		getMaybeTasks,
 		getTodayColumnTasks,
 		getDoneTasks,
@@ -9,7 +10,6 @@
 		sortTasksByColor,
 		getToday,
 	} from "$lib/stores/app.svelte.js";
-	import { sortOrderBetween } from "$lib/core/task-engine.js";
 	import { dndzone } from "svelte-dnd-action";
 
 	type Status = "maybe" | "today" | "done";
@@ -51,15 +51,34 @@
 
 	function handleDndFinalize(e: CustomEvent<{ items: any[] }>) {
 		dndItems = e.detail.items;
-		const items = e.detail.items;
-		items.forEach((item: any, idx: number) => {
-			const before = idx > 0 ? items[idx - 1].sortOrder : null;
-			const after =
-				idx < items.length - 1 ? items[idx + 1].sortOrder : null;
-			const newOrder = sortOrderBetween(before, after);
-			const original = allTasks.find((t) => t.id === item.id);
-			if (!original || original.sortOrder !== newOrder) {
-				setTaskStatus(item.id, status, newOrder);
+		const dropped: string[] = e.detail.items.map((i: any) => i.id);
+		const droppedSet = new Set(dropped);
+
+		// Renumber the whole column 1..n in the new order. Cards hidden by Focus
+		// mode keep their slots; the visible cards fill theirs in the order shown.
+		// (Averaging neighbours' old sort orders scrambled the order whenever
+		// several cards moved at once or orders were tied.)
+		const queue = [...dropped];
+		const order: string[] = [];
+		for (const t of allTasks) {
+			if (droppedSet.has(t.id) || tasks.some((v) => v.id === t.id)) {
+				const next = queue.shift();
+				if (next) order.push(next);
+			} else {
+				order.push(t.id);
+			}
+		}
+		order.push(...queue); // cards dragged in from another column
+
+		order.forEach((id, idx) => {
+			const sortOrder = idx + 1;
+			const original = allTasks.find((t) => t.id === id);
+			if (original) {
+				// Already in this column: only its position changes
+				if (original.sortOrder !== sortOrder) setTaskSortOrder(id, sortOrder);
+			} else {
+				// Came from another column: that changes its day/completion
+				setTaskStatus(id, status, sortOrder);
 			}
 		});
 	}

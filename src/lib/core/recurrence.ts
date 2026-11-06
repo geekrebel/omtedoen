@@ -138,19 +138,37 @@ export function nextOccurrence(rule: RecurrenceRule, afterDate: string): string 
 		case 'biweekly':
 			return addDays(afterDate, 14);
 
-		case 'monthly': {
-			const next = new Date(d);
-			next.setMonth(next.getMonth() + 1);
-			return formatDate(next);
-		}
+		case 'monthly':
+			return addMonthsClamped(d, 1);
 
-		case 'yearly': {
-			const next = new Date(d);
-			next.setFullYear(next.getFullYear() + 1);
-			return formatDate(next);
-		}
+		case 'yearly':
+			return addMonthsClamped(d, 12);
 
 		default:
 			return null;
 	}
+}
+
+/** Add months without overflowing: 31 Jan + 1 month = 28/29 Feb, not 3 Mar. */
+function addMonthsClamped(d: Date, months: number): string {
+	const target = new Date(d.getFullYear(), d.getMonth() + months, 1);
+	const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+	target.setDate(Math.min(d.getDate(), lastDay));
+	return formatDate(target);
+}
+
+/**
+ * The first date on or after `fromDate` that fits the rule. Unlike
+ * nextOccurrence this can return `fromDate` itself, so "daily" added today
+ * starts today and "every monday" added on a Monday starts that Monday.
+ */
+export function firstOccurrence(rule: RecurrenceRule, fromDate: string): string {
+	const day = parseDate(fromDate).getDay();
+	if (rule.type === 'weekdays' && (day === 0 || day === 6)) {
+		return nextOccurrence(rule, fromDate) ?? fromDate;
+	}
+	if (rule.type === 'weekly' && rule.dayOfWeek !== undefined && day !== rule.dayOfWeek) {
+		return nextOccurrence(rule, fromDate) ?? fromDate;
+	}
+	return fromDate;
 }

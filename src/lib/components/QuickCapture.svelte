@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { addTask } from "$lib/stores/app.svelte.js";
 	import { todayISO, dayLabel } from "$lib/utils/dates.js";
-	import { extractRecurrence, nextOccurrence } from "$lib/core/recurrence.js";
+	import { extractRecurrence, firstOccurrence } from "$lib/core/recurrence.js";
 	import { extractDateTarget } from "$lib/core/date-parser.js";
 
 	interface Props {
@@ -14,6 +14,12 @@
 	let value = $state("");
 	let inputEl: HTMLInputElement | undefined = $state();
 	let feedback = $state<string | null>(null);
+	let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function cancelCloseTimer() {
+		if (closeTimer) clearTimeout(closeTimer);
+		closeTimer = null;
+	}
 
 	// Live preview of what will happen
 	let preview = $derived(() => {
@@ -26,8 +32,7 @@
 
 		let targetDate: string;
 		if (rule) {
-			const next = nextOccurrence(rule, parsedDate || todayISO());
-			targetDate = next ? dayLabel(next) : dayLabel(parsedDate || todayISO());
+			targetDate = dayLabel(firstOccurrence(rule, parsedDate || todayISO()));
 		} else {
 			targetDate = dayLabel(parsedDate!);
 		}
@@ -49,7 +54,9 @@
 			const recur = task.recurrenceRule ? ` (${task.recurrenceRule})` : "";
 			feedback = `Added "${task.title}" to ${dateStr}${recur}`;
 			value = "";
-			setTimeout(() => {
+			cancelCloseTimer();
+			closeTimer = setTimeout(() => {
+				closeTimer = null;
 				feedback = null;
 				onclose();
 			}, 1500);
@@ -59,6 +66,7 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === "Enter") handleSubmit();
 		if (e.key === "Escape") {
+			cancelCloseTimer();
 			value = "";
 			feedback = null;
 			onclose();
@@ -67,6 +75,8 @@
 
 	$effect(() => {
 		if (open) {
+			// A close scheduled by the previous add must not shut this session
+			cancelCloseTimer();
 			value = "";
 			feedback = null;
 			requestAnimationFrame(() => inputEl?.focus());

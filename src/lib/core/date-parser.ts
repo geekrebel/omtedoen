@@ -11,24 +11,57 @@ export interface DateParseResult {
 }
 
 /**
+ * Words that are dates only when they stand with something else
+ * ("on sat", "next sun", "3 march"). On their own they are far more often
+ * ordinary words in a task: "sun cream", "sat test prep", "march on".
+ */
+const AMBIGUOUS_ALONE =
+	/^(sun|mon|tue|tues|wed|thu|thur|thurs|fri|sat|jan|feb|mar|march|apr|april|may|jun|june|jul|july|aug|sep|sept|oct|nov|dec)\.?$/i;
+
+/** Day-first (10/11 = 10 November) everywhere except month-first locales. */
+function parserFor(locale: string | undefined): chrono.Chrono {
+	return locale && /-(US|PH|FM|MH|PW)\b/i.test(locale) ? chrono.en.casual : chrono.en.GB;
+}
+
+function defaultLocale(): string | undefined {
+	if (typeof navigator !== 'undefined' && navigator.language) return navigator.language;
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().locale;
+	} catch {
+		return undefined;
+	}
+}
+
+/**
  * Extract a one-off date target from a task title using chrono-node.
  *
  * Should be called AFTER extractRecurrence() has stripped recurrence patterns.
  * Handles "tomorrow", "next friday", "March 15", "in 3 days", etc.
+ *
+ * Ignored on purpose (the text stays in the title):
+ * - dates in the past ("about yesterday's meeting", "from last week")
+ * - bare weekday/month words ("sun cream", "sat test prep")
+ * - times with no day ("call bob at noon")
  */
 export function extractDateTarget(
 	input: string,
-	referenceDate?: Date
+	referenceDate?: Date,
+	locale: string | undefined = defaultLocale()
 ): DateParseResult {
 	const ref = referenceDate ?? new Date();
-	const results = chrono.parse(input, ref, { forwardDate: true });
+	const today = formatDate(ref);
+	const results = parserFor(locale).parse(input, ref, { forwardDate: true });
 
-	if (results.length === 0) {
+	const match = results.find((r) => {
+		if (AMBIGUOUS_ALONE.test(r.text.trim())) return false;
+		if (!r.start.isCertain('day') && !r.start.isCertain('weekday')) return false;
+		return formatDate(r.start.date()) >= today;
+	});
+
+	if (!match) {
 		return { title: input, parsedDate: null, dateText: null };
 	}
 
-	// Take the first (most prominent) date match
-	const match = results[0];
 	const parsedDate = formatDate(match.start.date());
 	const dateText = match.text;
 

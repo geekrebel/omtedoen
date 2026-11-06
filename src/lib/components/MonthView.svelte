@@ -16,6 +16,7 @@
         dayLabel,
     } from "$lib/utils/dates.js";
     import PersistentQuickAdd from "./PersistentQuickAdd.svelte";
+    import { stripMarkdown } from "$lib/core/markdown.js";
 
     let offset = $derived(getMonthOffset());
     let todayDate = $derived(getToday());
@@ -205,7 +206,7 @@
                                                     {#if task.isCompleted}&#x2713;{/if}
                                                 </button>
                                                 <span class="popover-task-title"
-                                                    >{task.title}</span
+                                                    >{stripMarkdown(task.title)}</span
                                                 >
                                                 <button
                                                     class="popover-delete"

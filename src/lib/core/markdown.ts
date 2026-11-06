@@ -20,10 +20,12 @@ export function renderMarkdown(text: string): string {
 	// Inline code: `code`
 	html = html.replace(/`(.+?)`/g, '<code>$1</code>');
 
-	// Links: [text](url)
-	html = html.replace(
-		/\[(.+?)\]\((.+?)\)/g,
-		'<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+	// Links: [text](url) — web and mail links only; anything else
+	// (javascript:, file:, data:…) is shown as plain text
+	html = html.replace(/\[(.+?)\]\((.+?)\)/g, (_m, label: string, url: string) =>
+		isSafeUrl(url)
+			? `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
+			: label
 	);
 
 	return html;
@@ -35,4 +37,21 @@ function escapeHtml(text: string): string {
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;');
+}
+
+/** http(s) and mailto only. `url` is already HTML-escaped. */
+export function isSafeUrl(url: string): boolean {
+	return /^(https?:\/\/|mailto:)/i.test(url.trim());
+}
+
+/** Task title as plain text, for places that don't render markdown. */
+export function stripMarkdown(text: string): string {
+	return text
+		.replace(/\[(.+?)\]\((.+?)\)/g, '$1')
+		.replace(/\*\*(.+?)\*\*/g, '$1')
+		.replace(/__(.+?)__/g, '$1')
+		.replace(/\*(.+?)\*/g, '$1')
+		.replace(/(?<!\w)_(.+?)_(?!\w)/g, '$1')
+		.replace(/~~(.+?)~~/g, '$1')
+		.replace(/`(.+?)`/g, '$1');
 }

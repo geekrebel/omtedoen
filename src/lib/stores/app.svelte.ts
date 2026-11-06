@@ -12,10 +12,11 @@ import {
 	freshStart as freshStartEngine,
 	isBoardCard,
 	restoreTask as restoreTaskEngine,
+	recurrenceChildId,
 	nextSortOrder,
 	sortOrderBetween
 } from '$lib/core/task-engine.js';
-import { extractRecurrence, nextOccurrence } from '$lib/core/recurrence.js';
+import { extractRecurrence, nextOccurrence, firstOccurrence } from '$lib/core/recurrence.js';
 import { extractDateTarget } from '$lib/core/date-parser.js';
 
 // Reactive state
@@ -237,7 +238,48 @@ export function isFocusMode(): boolean {
 }
 
 export function toggleFocusMode() {
-	focusMode = !focusMode;
+	setFocusMode(!focusMode);
+}
+
+let savedWindowSize: { width: number; height: number } | null = null;
+
+/**
+ * Turn Focus mode on/off everywhere it can be toggled from (button, ⌘⇧F,
+ * palette, Settings): saves the setting and narrows / restores the window.
+ */
+export async function setFocusMode(on: boolean): Promise<void> {
+	if (on === focusMode) return;
+	focusMode = on;
+	if (store) await store.setSetting('focusMode', String(on));
+	if (!isTauri()) return;
+	try {
+		const { getCurrentWindow } = await import('@tauri-apps/api/window');
+		if (getCurrentWindow().label !== 'main') return;
+		const { LogicalSize, PhysicalSize } = await import('@tauri-apps/api/dpi');
+		const win = getCurrentWindow();
+		if (on) {
+			const size = await win.innerSize();
+			savedWindowSize = { width: size.width, height: size.height };
+			const logicalHeight = size.height / (window.devicePixelRatio || 1);
+			await win.setMinSize(new LogicalSize(380, 500));
+			await win.setSize(new LogicalSize(480, logicalHeight));
+		} else {
+			await win.setMinSize(new LogicalSize(700, 500));
+			if (savedWindowSize) {
+				await win.setSize(new PhysicalSize(savedWindowSize.width, savedWindowSize.height));
+				savedWindowSize = null;
+			} else {
+				// Focus mode was on at launch, so there is no size to go back to
+				const size = await win.innerSize();
+				const scale = window.devicePixelRatio || 1;
+				if (size.width / scale < 900) {
+					await win.setSize(new LogicalSize(1100, Math.max(600, size.height / scale)));
+				}
+			}
+		}
+	} catch {
+		// Not fatal: the window just keeps its size
+	}
 }
 
 
@@ -257,7 +299,8 @@ const MUTATING_STORE_METHODS = [
 	'upsertTasks',
 	'upsertList',
 	'softDeleteTask',
-	'softDeleteList'
+	'softDeleteList',
+	'setSetting'
 ];
 let emitTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -310,11 +353,45 @@ export async function startCrossWindowSync(): Promise<void> {
 			if (e.payload?.source === myLabel || !store) return;
 			allTasks = await store.getAllTasks();
 			allLists = await store.getAllLists();
+			focusMode = (await store.getSetting('focusMode')) === 'true';
 			await refreshTrash();
 		});
 	} catch {
 		syncStarted = false;
 	}
+}
+
+const PARKING_LOT_ID = 'list-parking-lot';
+const DEFAULT_SOMEDAY_ID = 'list-someday';
+
+/**
+ * Unfinished tasks that no view shows (no date and no list, or a list that no
+ * longer exists) go to the default Someday list.
+ */
+async function repairOrphans(): Promise<void> {
+	if (!store) return;
+	const liveLists = new Set(allLists.filter((l) => !l.deletedAt).map((l) => l.id));
+	const orphans = allTasks.filter(
+		(t) =>
+			!t.deletedAt &&
+			!t.isCompleted &&
+			!t.parked &&
+			((t.dateTarget === null && t.listId === null) ||
+				(t.listId !== null && !liveLists.has(t.listId)))
+	);
+	if (orphans.length === 0) return;
+	const now = new Date().toISOString();
+	let order = nextListSortOrder(defaultSomedayId);
+	const fixed = orphans.map((t) => ({
+		...t,
+		listId: defaultSomedayId,
+		listSortOrder: order++,
+		updatedAt: now,
+		fieldTimestamps: { ...t.fieldTimestamps, listId: now, listSortOrder: now }
+	}));
+	await store.upsertTasks(fixed);
+	const byId = new Map(fixed.map((t) => [t.id, t]));
+	allTasks = allTasks.map((t) => byId.get(t.id) ?? t);
 }
 
 // Initialization
@@ -329,8 +406,10 @@ export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
 	// Ensure parking lot list exists
 	let parkingLot = allLists.find((l) => l.isParkingLot);
 	if (!parkingLot) {
+		// Fixed id: the main window and the panel both run this at launch, and
+		// with random ids each could create its own Parking Lot
 		parkingLot = createList({
-			id: newId(),
+			id: PARKING_LOT_ID,
 			name: 'Parking Lot',
 			isParkingLot: true,
 			sortOrder: 999999
@@ -344,7 +423,7 @@ export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
 	let defaultSomeday = allLists.find((l) => l.isDefault && !l.isParkingLot);
 	if (!defaultSomeday) {
 		defaultSomeday = createList({
-			id: newId(),
+			id: DEFAULT_SOMEDAY_ID,
 			name: 'Someday',
 			isDefault: true,
 			sortOrder: 0
@@ -353,6 +432,8 @@ export async function initStore(s: TodoStore, type: StoreType): Promise<void> {
 		allLists = [...allLists, defaultSomeday];
 	}
 	defaultSomedayId = defaultSomeday.id;
+
+	await repairOrphans();
 
 	// Run daily rollover
 	const todayDate = todayISO();
@@ -432,13 +513,15 @@ export async function addTask(
 		finalTitle = finalTitle.slice(6);
 	}
 
-	// For recurring tasks with a specific day, place the task on the next
-	// occurrence instead of today (e.g. "buy milk every monday" → next Monday)
+	// A task dated in the past would sit unseen until the next day's rollover
+	if (effectiveDate && effectiveDate < today) {
+		effectiveDate = today;
+	}
+
+	// Recurring tasks start on the first day that fits the rule: "daily" starts
+	// today, "every monday" starts today if it is Monday, else next Monday
 	if (rule && effectiveDate) {
-		const next = nextOccurrence(rule, effectiveDate);
-		if (next) {
-			effectiveDate = next;
-		}
+		effectiveDate = firstOccurrence(rule, effectiveDate);
 	}
 
 	const tasksInContext = effectiveDate
@@ -478,17 +561,45 @@ export async function toggleTask(id: string): Promise<void> {
 	if (!task) return;
 
 	if (task.isCompleted) {
-		const updated = uncompleteTaskEngine(task);
+		let updated = uncompleteTaskEngine(task);
+		// Un-completing a recurring task takes back the instance it spawned,
+		// as long as nobody has touched it since
+		const child = task.recurrenceRule
+			? allTasks.find((t) => t.id === recurrenceChildId(task.id))
+			: undefined;
+		if (child && !child.isCompleted && child.updatedAt === child.createdAt) {
+			await store.softDeleteTask(child.id);
+			allTasks = allTasks.filter((t) => t.id !== child.id);
+			if (child.listId && updated.listId === null) {
+				// It was a board card: give the board spot back
+				const now = new Date().toISOString();
+				updated = {
+					...updated,
+					listId: child.listId,
+					listSortOrder: child.listSortOrder,
+					fieldTimestamps: { ...updated.fieldTimestamps, listId: now, listSortOrder: now }
+				};
+			}
+			await refreshTrash();
+		}
 		await store.upsertTask(updated);
 		allTasks = allTasks.map((t) => (t.id === id ? updated : t));
 	} else {
-		const { completed, nextInstance } = completeTaskEngine(task, newId());
+		const { completed, nextInstance } = completeTaskEngine(
+			task,
+			recurrenceChildId(task.id),
+			parkingLotId,
+			today
+		);
 		await store.upsertTask(completed);
 		allTasks = allTasks.map((t) => (t.id === id ? completed : t));
 
-		if (nextInstance) {
+		// The instance may already exist (completed before, then un-completed and
+		// the instance kept): never add a second copy
+		if (nextInstance && !allTasks.some((t) => t.id === nextInstance.id)) {
 			await store.upsertTask(nextInstance);
 			allTasks = [...allTasks, nextInstance];
+			await refreshTrash();
 		}
 	}
 }
@@ -511,7 +622,12 @@ export async function undo(): Promise<boolean> {
 	if (entry.type === 'delete') {
 		// Already restored from the Trash? Then there is nothing to undo.
 		if (allTasks.some((t) => t.id === entry.task.id)) return true;
-		const restored = { ...entry.task, deletedAt: null, updatedAt: new Date().toISOString() };
+		// Same safety rules as restoring from the Trash (deleted list, past date)
+		const restored = restoreTaskEngine(entry.task, {
+			today,
+			liveListIds: new Set(allLists.filter((l) => !l.deletedAt).map((l) => l.id)),
+			defaultListId: defaultSomedayId
+		});
 		await store.upsertTask(restored);
 		allTasks = [...allTasks, restored];
 		await refreshTrash();
@@ -547,6 +663,18 @@ export async function moveTask(taskId: string, newDate: string | null, newListId
 
 	await store.upsertTask(updated);
 	allTasks = allTasks.map((t) => (t.id === taskId ? updated : t));
+}
+
+/** Reorder a task within its day column. Unlike moveTask, keeps its rollover count. */
+export async function setTaskSortOrder(taskId: string, sortOrder: number): Promise<void> {
+	const task = allTasks.find((t) => t.id === taskId);
+	if (!task || task.sortOrder === sortOrder) return;
+	const now = new Date().toISOString();
+	await updateTask({
+		...task,
+		sortOrder,
+		fieldTimestamps: { ...task.fieldTimestamps, sortOrder: now }
+	});
 }
 
 /**

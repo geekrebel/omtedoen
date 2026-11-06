@@ -10,7 +10,8 @@
 		setCurrentView,
 		isFocusMode,
 		toggleFocusMode,
-		saveSetting,
+		setFocusMode,
+		type View,
 		getParkedTasks,
 		getSomedayLists,
 		getTrashTasks,
@@ -62,7 +63,7 @@
 		if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
 			try {
 				const { listen } = await import("@tauri-apps/api/event");
-				await listen("open-settings", () => setCurrentView("settings"));
+				await listen("open-settings", () => goTo("settings"));
 			} catch {}
 		}
 
@@ -103,51 +104,20 @@
 		}
 	}
 
-	let savedWindowSize: { width: number; height: number } | null = null;
-
-	async function handleToggleFocusMode() {
+	function handleToggleFocusMode() {
 		toggleFocusMode();
-		saveSetting("focusMode", String(isFocusMode()));
-		if (isFocusMode()) {
-			sidebarExpanded = false;
-			// Resize window to narrow focus width
-			try {
-				const { getCurrentWindow } = await import(
-					"@tauri-apps/api/window"
-				);
-				const { LogicalSize } = await import("@tauri-apps/api/dpi");
-				const win = getCurrentWindow();
-				const size = await win.innerSize();
-				savedWindowSize = {
-					width: size.width,
-					height: size.height,
-				};
-				const logicalHeight =
-					size.height / (window.devicePixelRatio || 1);
-				await win.setMinSize(new LogicalSize(380, 500));
-				await win.setSize(new LogicalSize(480, logicalHeight));
-			} catch {}
-		} else if (savedWindowSize) {
-			// Restore previous window size
-			try {
-				const { getCurrentWindow } = await import(
-					"@tauri-apps/api/window"
-				);
-				const { LogicalSize, PhysicalSize } = await import(
-					"@tauri-apps/api/dpi"
-				);
-				const win = getCurrentWindow();
-				await win.setMinSize(new LogicalSize(700, 500));
-				await win.setSize(
-					new PhysicalSize(
-						savedWindowSize.width,
-						savedWindowSize.height,
-					),
-				);
-				savedWindowSize = null;
-			} catch {}
-		}
 	}
+
+	// Focus mode hides the sidebar, so any shortcut that leaves the Today view
+	// also leaves Focus mode — otherwise there is no visible way back.
+	function goTo(next: View) {
+		if (isFocusMode() && next !== "focus") setFocusMode(false);
+		setCurrentView(next);
+	}
+
+	$effect(() => {
+		if (focusMode) sidebarExpanded = false;
+	});
 
 	function toggleSidebar() {
 		sidebarExpanded = !sidebarExpanded;
@@ -176,8 +146,15 @@
 		}
 		// Cmd+Z / Ctrl+Z — undo
 		if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) {
+			// Text fields (incl. the Scratchpad) keep their own undo
 			const target = e.target as HTMLElement;
-			if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+			if (
+				target &&
+				(target.tagName === "INPUT" ||
+					target.tagName === "TEXTAREA" ||
+					target.isContentEditable)
+			)
+				return;
 			e.preventDefault();
 			undo();
 		}
@@ -190,25 +167,25 @@
 		// this covers the browser/dev build)
 		if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === ",") {
 			e.preventDefault();
-			setCurrentView("settings");
+			goTo("settings");
 		}
 		// Cmd+1-4 — view switching
 		if ((e.metaKey || e.ctrlKey) && !e.shiftKey) {
 			if (e.key === "1") {
 				e.preventDefault();
-				setCurrentView("focus");
+				goTo("focus");
 			}
 			if (e.key === "2") {
 				e.preventDefault();
-				setCurrentView("month");
+				goTo("month");
 			}
 			if (e.key === "3") {
 				e.preventDefault();
-				setCurrentView("someday");
+				goTo("someday");
 			}
 			if (e.key === "4") {
 				e.preventDefault();
-				setCurrentView("scratchpad");
+				goTo("scratchpad");
 			}
 		}
 	}

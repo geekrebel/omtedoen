@@ -1,3 +1,9 @@
+<script module lang="ts">
+	// Only one card's ⋯ menu may be open at a time, across all lists and columns
+	let openMenuOwner = $state(0);
+	let instances = 0;
+</script>
+
 <script lang="ts">
 	import type { Task, ColorLabel } from "$lib/core/types.js";
 	import { renderMarkdown } from "$lib/core/markdown.js";
@@ -12,10 +18,11 @@
 		boardListOf,
 		getToday,
 		getTodayTasks,
+		getTasksForDate,
 		setTaskColorLabel,
 	} from "$lib/stores/app.svelte.js";
 	import { addDays } from "$lib/utils/dates.js";
-	import { sortOrderBetween } from "$lib/core/task-engine.js";
+	import { sortOrderBetween, nextSortOrder } from "$lib/core/task-engine.js";
 
 	interface Props {
 		task: Task;
@@ -44,7 +51,8 @@
 	let justCompleted = $state(false);
 	let isHovered = $state(false);
 	let animateToSomeday = $state(false);
-	let showMenu = $state(false);
+	const instanceId = ++instances;
+	let showMenu = $derived(openMenuOwner === instanceId);
 	let menuEl: HTMLDivElement | undefined = $state();
 
 	const colorLabelValues: Record<ColorLabel, string> = {
@@ -54,6 +62,26 @@
 		teal: "#06b6d4",
 	};
 
+	async function openLink(href: string) {
+		if ("__TAURI_INTERNALS__" in window) {
+			const { invoke } = await import("@tauri-apps/api/core");
+			await invoke("open_url", { url: href }).catch(() => {});
+		} else {
+			window.open(href, "_blank", "noopener");
+		}
+	}
+
+	function handleTitleClick(e: MouseEvent) {
+		// A link in the title opens the link; anywhere else edits the title
+		const link = (e.target as HTMLElement).closest("a");
+		if (link) {
+			e.preventDefault();
+			openLink(link.href);
+			return;
+		}
+		startEdit();
+	}
+
 	function startEdit() {
 		editValue = task.title;
 		editing = true;
@@ -61,6 +89,9 @@
 	}
 
 	function finishEdit() {
+		// Enter and Escape both end editing before the input's blur fires;
+		// the blur must not save a second time (or save a cancelled edit)
+		if (!editing) return;
 		editing = false;
 		const trimmed = editValue.trim();
 		if (trimmed && trimmed !== task.title) {
@@ -138,17 +169,17 @@
 	function handleMenuClick(e: KeyboardEvent | Event) {
 		e.stopPropagation();
 		if (showMenu) {
-			showMenu = false;
+			openMenuOwner = 0;
 			return;
 		}
 		menuUp = false;
-		showMenu = true;
+		openMenuOwner = instanceId;
 		// Measure once the menu is in the DOM, before it paints
 		tick().then(placeMenu);
 	}
 
 	function closeMenu() {
-		showMenu = false;
+		if (openMenuOwner === instanceId) openMenuOwner = 0;
 	}
 
 	function handleWindowClick(e: MouseEvent) {
@@ -158,11 +189,21 @@
 	}
 
 	function handleWindowKeydown(e: KeyboardEvent) {
+		if (showMenu && e.key === "Escape") {
+			e.preventDefault();
+			closeMenu();
+			return;
+		}
 		if (!isHovered || editing) return;
+		// ⌘S, ⌘⌫, ⌘1… belong to the app/system, and a held key must not
+		// fire again and again (a held Backspace deleted card after card)
+		if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
 		const target = e.target as HTMLElement;
 		if (
 			target &&
-			(target.tagName === "INPUT" || target.tagName === "TEXTAREA")
+			(target.tagName === "INPUT" ||
+				target.tagName === "TEXTAREA" ||
+				target.isContentEditable)
 		)
 			return;
 
@@ -193,10 +234,11 @@
 		}
 	}
 
+	/** Tomorrow as in the calendar, not the day after the card's own date. */
 	function moveToTomorrow() {
-		if (!task.dateTarget) return;
-		const tomorrow = addDays(task.dateTarget, 1);
-		scheduleTask(task.id, tomorrow, task.sortOrder);
+		const tomorrow = addDays(getToday(), 1);
+		if (task.dateTarget === tomorrow) return;
+		scheduleTask(task.id, tomorrow, nextSortOrder(getTasksForDate(tomorrow)));
 	}
 
 	function moveToSomeday() {
@@ -337,7 +379,7 @@
 				data-no-dnd="true"
 				class="task-title"
 				class:line-through={task.isCompleted}
-				onclick={startEdit}
+				onclick={handleTitleClick}
 			>
 				{@html renderedTitle}
 			</span>
@@ -390,16 +432,15 @@
 
 		{#if showMenu}
 			<div class="task-menu" class:up={menuUp}>
-				{#if task.dateTarget}
+				{#if task.dateTarget !== addDays(getToday(), 1)}
 					<button
 						class="menu-item"
 						onclick={() => {
-							const tomorrow = task.dateTarget ? addDays(task.dateTarget, 1) : getToday();
-							scheduleTask(task.id, tomorrow, task.sortOrder);
+							moveToTomorrow();
 							closeMenu();
 						}}
 					>
-						Move to Tomorrow
+						{onBoard && !task.dateTarget ? "Add to Tomorrow" : "Move to Tomorrow"}
 					</button>
 				{/if}
 				{#if task.dateTarget !== getToday()}
